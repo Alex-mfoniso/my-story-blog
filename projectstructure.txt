@@ -1,0 +1,47 @@
+story-blog/
+├── public/
+│   └── favicon.ico
+│   └── index.html
+│
+├── src/
+│   ├── assets/               # Images, icons, etc.
+│
+│   ├── components/           # Reusable UI components
+│   │   ├── Header.jsx
+│   │   ├── Footer.jsx
+│   │   ├── StoryCard.jsx
+│   │   ├── CommentBox.jsx
+│   │   ├── LikeButton.jsx
+│   │   └── ProtectedRoute.jsx
+│
+│   ├── pages/                # Route-level pages
+│   │   ├── Home.jsx          # Landing page
+│   │   ├── Stories.jsx       # All stories listing
+│   │   ├── Story.jsx         # Individual story reader with comments
+│   │   ├── Upload.jsx        # Admin-only upload page
+│   │   ├── Login.jsx         # Login with Google or email
+│   │   └── NotFound.jsx
+│
+│   ├── context/              # React Context for Auth, Theme, etc.
+│   │   ├── AuthContext.jsx
+│
+│   ├── firebase/             # Firebase config and helpers
+│   │   ├── config.js         # Firebase initialization
+│   │   ├── auth.js           # Auth helpers
+│   │   └── firestore.js      # DB helpers
+│
+│   ├── routes/               # App routing
+│   │   └── AppRouter.jsx
+│
+│   ├── styles/               # Global styles / Tailwind overrides
+│   │   └── index.css
+│
+│   ├── App.jsx
+│   └── main.jsx
+│
+├── .env                     # Firebase keys (never commit this!)
+├── tailwind.config.js
+├── postcss.config.js
+├── vite.config.js
+├── package.json
+└── README.md

@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* @import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities"; */
+
+body {
+   @apply bg-[#231123] text-white;
+  font-family: "Open Sans", sans-serif;
+}
+
+.dark body {
+  @apply bg-white text-[#231123];
+}
+html {
+  scroll-behavior: smooth;
+}
