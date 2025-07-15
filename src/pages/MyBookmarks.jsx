@@ -1,4 +1,3 @@
-// src/pages/MyBookmarks.jsx
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase/fireabase";
@@ -6,7 +5,9 @@ import {
   collection,
   getDocs,
   doc,
+  getDoc,
   getCountFromServer,
+  collectionGroup,
 } from "firebase/firestore";
 import { Link } from "react-router-dom";
 
@@ -22,25 +23,37 @@ const MyBookmarks = () => {
       try {
         const bookmarksRef = collection(db, "users", user.uid, "bookmarks");
         const snapshot = await getDocs(bookmarksRef);
+
         const stories = await Promise.all(
-          snapshot.docs.map(async (docSnap) => {
-            const storyDoc = await getDocs(
-              collection(db, "stories", docSnap.id, "likes")
+          snapshot.docs.map(async (bookmarkDoc) => {
+            const storyId = bookmarkDoc.id;
+
+            // Get actual story data
+            const storyRef = doc(db, "stories", storyId);
+            const storySnap = await getDoc(storyRef);
+            if (!storySnap.exists()) return null;
+
+            const storyData = storySnap.data();
+
+            // Get like and comment counts
+            const likesSnap = await getCountFromServer(
+              collection(db, "stories", storyId, "likes")
             );
             const commentsSnap = await getCountFromServer(
-              collection(db, "stories", docSnap.id, "comments")
+              collection(db, "stories", storyId, "comments")
             );
 
             return {
-              id: docSnap.id,
-              ...docSnap.data(),
-              likeCount: storyDoc.size,
+              id: storyId,
+              ...storyData,
+              likeCount: likesSnap.data().count,
               commentCount: commentsSnap.data().count,
             };
           })
         );
 
-        setBookmarkedStories(stories);
+        // Filter out any null (non-existent) stories
+        setBookmarkedStories(stories.filter(Boolean));
       } catch (err) {
         console.error("Failed to fetch bookmarks:", err);
       } finally {
@@ -72,13 +85,8 @@ const MyBookmarks = () => {
       ) : (
         <div className="space-y-6 max-w-3xl mx-auto">
           {bookmarkedStories.map((story) => (
-            <div
-              key={story.id}
-              className="bg-[#2c1b2f] p-6 rounded shadow"
-            >
-              <h3 className="text-2xl font-bold text-[#c30F45]">
-                {story.title}
-              </h3>
+            <div key={story.id} className="bg-[#2c1b2f] p-6 rounded shadow">
+              <h3 className="text-2xl font-bold text-[#c30F45]">{story.title}</h3>
               <p className="text-sm text-gray-300 mb-2">
                 {story.genre} • by {story.author?.name || "Anonymous"}
               </p>
