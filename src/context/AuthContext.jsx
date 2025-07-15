@@ -17,6 +17,8 @@ import {
 
 const AuthContext = createContext();
 
+
+
 export const AuthProvider = ({ children }) => {
   const auth = getAuth();
   const provider = new GoogleAuthProvider();
