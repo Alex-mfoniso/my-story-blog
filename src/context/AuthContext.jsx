@@ -25,20 +25,26 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    // Handle redirect result separately on mount for mobile login
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          setUser(result.user);
+        }
+      })
+      .catch((err) => {
+        console.error("Redirect login failed:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
       } else {
-        try {
-          const result = await getRedirectResult(auth);
-          if (result?.user) {
-            setUser(result.user);
-          }
-        } catch (err) {
-          console.error("Redirect login failed:", err);
-        }
+        setUser(null);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
