@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx
 import {
   createContext,
   useContext,
@@ -12,6 +11,8 @@ import {
   signInWithRedirect,
   getRedirectResult,
   GoogleAuthProvider,
+  setPersistence,
+  browserLocalPersistence,
   signOut,
 } from "firebase/auth";
 
@@ -24,23 +25,28 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-      } else {
-        try {
-          const result = await getRedirectResult(auth);
-          if (result?.user) {
-            setUser(result.user);
-          }
-        } catch (err) {
-          console.error("Redirect login failed:", err);
-        }
-      }
-      setLoading(false);
-    });
+    const init = async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
 
-    return () => unsubscribe();
+        const result = await getRedirectResult(auth); // Must be before onAuthStateChanged
+        if (result?.user) {
+          setUser(result.user);
+        }
+
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+          setUser(firebaseUser);
+          setLoading(false);
+        });
+
+        return unsubscribe;
+      } catch (err) {
+        console.error("Auth initialization error:", err);
+        setLoading(false);
+      }
+    };
+
+    init();
   }, []);
 
   const login = () => {

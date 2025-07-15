@@ -24,4 +24,4 @@ const app = initializeApp(firebaseConfig);
 export default app;
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-// setPersistence(auth, browserLocalPersistence); // ✅ Important for mob
+setPersistence(auth, browserLocalPersistence); // ✅ Important for mob
