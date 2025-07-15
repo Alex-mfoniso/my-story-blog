@@ -7,6 +7,7 @@ import Stories from "../pages/Stories";
 import Login from "../pages/Login";
 import Profile from "../pages/Profile";
 import StoryDetail from "../pages/StoryDetail";
+import MyBookmarks from "../pages/MyBookmarks";
 // import other pages as you create them (e.g. Stories, Upload, Login)
 
 const AppRouter = () => {
@@ -17,6 +18,7 @@ const AppRouter = () => {
         <Route path="/" element={<Home />} />
          <Route path="/upload" element={<Upload />} />
          <Route path="/story/:id" element={<StoryDetail />} />
+         <Route path="/bookmarks" element={<MyBookmarks />} />
 
          <Route path="/stories" element={<Stories />} />
          <Route path="/login" element={<Login />} />

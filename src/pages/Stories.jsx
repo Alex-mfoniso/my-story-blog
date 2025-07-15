@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { db } from "../firebase/fireabase";
 import {
   collection,
@@ -8,13 +8,18 @@ import {
   limit,
   startAfter,
   getCountFromServer,
+  doc,
+  setDoc,
+  deleteDoc,
+  getDoc
 } from "firebase/firestore";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const STORIES_PER_PAGE = 5;
-const CACHE_REFRESH_INTERVAL = 1000 * 60 * 10; // 10 minutes
 
 const Stories = () => {
+  const { user } = useAuth();
   const [stories, setStories] = useState(() => {
     const cached = localStorage.getItem("cachedStories");
     return cached ? JSON.parse(cached) : [];
@@ -25,9 +30,9 @@ const Stories = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("All");
-  const observer = useRef();
+  const [bookmarkIds, setBookmarkIds] = useState(new Set());
 
-  const fetchStories = async (loadMore = false, reset = false) => {
+  const fetchStories = async (loadMore = false) => {
     try {
       if (loadMore) setLoadingMore(true);
       else setLoading(true);
@@ -62,15 +67,12 @@ const Stories = () => {
         })
       );
 
-      setStories((prev) => {
-        const updated = loadMore ? [...prev, ...enrichedData] : enrichedData;
-        const uniqueStories = Array.from(
-          new Map(updated.map((story) => [story.id, story])).values()
-        );
-        localStorage.setItem("cachedStories", JSON.stringify(uniqueStories));
-        localStorage.setItem("storiesCacheTime", Date.now().toString());
-        return uniqueStories;
-      });
+      const updatedStories = loadMore
+        ? [...stories, ...enrichedData.filter(s => !stories.some(st => st.id === s.id))]
+        : enrichedData;
+
+      setStories(updatedStories);
+      localStorage.setItem("cachedStories", JSON.stringify(updatedStories));
 
       const last = snapshot.docs[snapshot.docs.length - 1];
       setLastDoc(last);
@@ -86,28 +88,32 @@ const Stories = () => {
     }
   };
 
-  useEffect(() => {
-    const cacheTime = parseInt(localStorage.getItem("storiesCacheTime"), 10);
-    const now = Date.now();
+  const fetchBookmarks = useCallback(async () => {
+    if (!user) return;
+    const snapshot = await getDocs(collection(db, "users", user.uid, "bookmarks"));
+    const ids = new Set(snapshot.docs.map(doc => doc.id));
+    setBookmarkIds(ids);
+  }, [user]);
 
-    if (!cacheTime || now - cacheTime > CACHE_REFRESH_INTERVAL) {
-      fetchStories(false, true);
-    } else if (stories.length === 0) {
-      fetchStories();
+  const toggleBookmark = async (storyId) => {
+    if (!user) return alert("Login to bookmark stories");
+    const ref = doc(db, "users", user.uid, "bookmarks", storyId);
+    const isBookmarked = bookmarkIds.has(storyId);
+    if (isBookmarked) {
+      await deleteDoc(ref);
+    } else {
+      await setDoc(ref, { savedAt: new Date() });
     }
+    fetchBookmarks();
+  };
+
+  useEffect(() => {
+    if (stories.length === 0) fetchStories();
   }, []);
 
-  const lastStoryRef = useRef();
   useEffect(() => {
-    if (loadingMore || !hasMore) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        fetchStories(true);
-      }
-    });
-    if (lastStoryRef.current) observer.current.observe(lastStoryRef.current);
-  }, [loadingMore, hasMore, lastDoc]);
+    fetchBookmarks();
+  }, [fetchBookmarks]);
 
   const filteredStories = stories.filter((story) => {
     const matchesTitle = story.title.toLowerCase().includes(searchQuery.toLowerCase());
@@ -125,7 +131,7 @@ const Stories = () => {
         <input
           type="text"
           placeholder="Search by title..."
-          className="flex-1 p-3 rounded text-white bg-[#2c1b2f]"
+          className="flex-1 p-3 rounded text-white"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -148,12 +154,8 @@ const Stories = () => {
         <div className="text-center text-gray-300">No stories found.</div>
       ) : (
         <div className="space-y-6 max-w-3xl mx-auto">
-          {filteredStories.map((story, idx) => (
-            <div
-              key={story.id}
-              className="bg-[#2c1b2f] p-6 rounded shadow"
-              ref={idx === filteredStories.length - 1 ? lastStoryRef : null}
-            >
+          {filteredStories.map((story) => (
+            <div key={story.id} className="bg-[#2c1b2f] p-6 rounded shadow">
               <h3 className="text-2xl font-bold text-[#c30F45]">{story.title}</h3>
               <p className="text-sm text-gray-300 mb-2">
                 {story.genre} • by {story.author?.name || "Anonymous"}
@@ -165,6 +167,12 @@ const Stories = () => {
               <div className="flex items-center text-sm text-gray-400 mt-3 gap-4">
                 <span>❤️ {story.likeCount} likes</span>
                 <span>💬 {story.commentCount} comments</span>
+                <button
+                  onClick={() => toggleBookmark(story.id)}
+                  className="ml-auto text-[#c30F45] hover:text-pink-400"
+                >
+                  {bookmarkIds.has(story.id) ? "🔖 Bookmarked" : "📑 Bookmark"}
+                </button>
               </div>
               <Link
                 to={`/story/${story.id}`}
@@ -175,8 +183,16 @@ const Stories = () => {
             </div>
           ))}
 
-          {!hasMore && (
-            <div className="text-center text-gray-500 pt-6">🎉 You’ve reached the end!</div>
+          {hasMore && (
+            <div className="text-center mt-6">
+              <button
+                onClick={() => fetchStories(true)}
+                disabled={loadingMore}
+                className="bg-[#c30F45] px-6 py-2 rounded hover:opacity-90 transition"
+              >
+                {loadingMore ? "Loading..." : "Load More"}
+              </button>
+            </div>
           )}
         </div>
       )}
