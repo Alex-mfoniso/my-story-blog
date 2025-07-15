@@ -1,225 +1,214 @@
+// src/pages/StoryDetail.jsx
 import React, { useEffect, useState } from "react";
-import { db } from "../firebase/fireabase";
+import { useParams } from "react-router-dom";
 import {
+  doc,
+  getDoc,
+  updateDoc,
   collection,
+  addDoc,
   getDocs,
   query,
   orderBy,
-  limit,
-  startAfter,
-  getCountFromServer,
-  doc,
-  getDoc,
   setDoc,
   deleteDoc,
 } from "firebase/firestore";
-import { Link } from "react-router-dom";
+import { db } from "../firebase/fireabase";
 import { useAuth } from "../context/AuthContext";
+import { formatDistanceToNow } from "date-fns";
 
-const STORIES_PER_PAGE = 5;
-
-const Stories = () => {
+const StoryDetail = () => {
+  const { id } = useParams();
   const { user } = useAuth();
-  const [stories, setStories] = useState(() => {
-    const cached = localStorage.getItem("cachedStories");
-    return cached ? JSON.parse(cached) : [];
-  });
-  const [loading, setLoading] = useState(stories.length === 0);
-  const [lastDoc, setLastDoc] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedGenre, setSelectedGenre] = useState("All");
 
-  const fetchStories = async (loadMore = false) => {
-    try {
-      if (loadMore) setLoadingMore(true);
-      else setLoading(true);
+  const [story, setStory] = useState(null);
+  const [likes, setLikes] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+  const [bookmark, setBookmark] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-      let q = query(
-        collection(db, "stories"),
-        orderBy("createdAt", "desc"),
-        limit(STORIES_PER_PAGE)
-      );
+  // Fetch story, likes, comments
+  useEffect(() => {
+    const fetchStoryData = async () => {
+      setLoading(true);
+      try {
+        const storyRef = doc(db, "stories", id);
+        const snap = await getDoc(storyRef);
+        if (snap.exists()) {
+          setStory({ id: snap.id, ...snap.data() });
+        }
 
-      if (loadMore && lastDoc) {
-        q = query(q, startAfter(lastDoc));
+        // Likes
+        if (user) {
+          const likeRef = doc(db, "stories", id, "likes", user.uid);
+          const likeSnap = await getDoc(likeRef);
+          setLiked(likeSnap.exists());
+        }
+
+        const likesCol = await getDocs(collection(db, "stories", id, "likes"));
+        setLikes(likesCol.size);
+
+        // Comments
+        const q = query(collection(db, "stories", id, "comments"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        setComments(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+
+        // Bookmark status
+        if (user) {
+          const bookmarkRef = doc(db, "users", user.uid, "bookmarks", id);
+          const bookmarkSnap = await getDoc(bookmarkRef);
+          setBookmark(bookmarkSnap.exists());
+        }
+      } catch (error) {
+        console.error("Error fetching story:", error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const snapshot = await getDocs(q);
+    fetchStoryData();
+  }, [id, user]);
 
-      let enrichedData = await Promise.all(
-        snapshot.docs.map(async (docSnap) => {
-          const likesSnap = await getCountFromServer(
-            collection(db, "stories", docSnap.id, "likes")
-          );
-          const commentsSnap = await getCountFromServer(
-            collection(db, "stories", docSnap.id, "comments")
-          );
-
-          return {
-            id: docSnap.id,
-            ...docSnap.data(),
-            likeCount: likesSnap.data().count,
-            commentCount: commentsSnap.data().count,
-          };
-        })
-      );
-
-      // Check bookmark status if user is logged in
-      if (user) {
-        enrichedData = await Promise.all(
-          enrichedData.map(async (story) => {
-            const bookmarkRef = doc(db, "users", user.uid, "bookmarks", story.id);
-            const snap = await getDoc(bookmarkRef);
-            return { ...story, isBookmarked: snap.exists() };
-          })
-        );
-      }
-
-      const updatedStories = loadMore
-        ? [...stories, ...enrichedData]
-        : enrichedData;
-
-      setStories(updatedStories);
-      localStorage.setItem("cachedStories", JSON.stringify(updatedStories));
-
-      const last = snapshot.docs[snapshot.docs.length - 1];
-      setLastDoc(last);
-      if (snapshot.docs.length < STORIES_PER_PAGE) {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error("Error fetching stories:", error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
+  const handleLike = async () => {
+    if (!user) return alert("Login to like this story.");
+    const likeRef = doc(db, "stories", id, "likes", user.uid);
+    await setDoc(likeRef, { likedAt: new Date() });
+    setLiked(true);
+    setLikes((prev) => prev + 1);
   };
 
-  const toggleBookmark = async (storyId, currentStatus) => {
-    if (!user) return alert("Login to bookmark");
+  const handleBookmark = async () => {
+    if (!user) return alert("Login to bookmark.");
+    const bookmarkRef = doc(db, "users", user.uid, "bookmarks", id);
 
-    const bookmarkRef = doc(db, "users", user.uid, "bookmarks", storyId);
     try {
-      if (currentStatus) {
+      if (bookmark) {
         await deleteDoc(bookmarkRef);
+        setBookmark(false);
       } else {
         await setDoc(bookmarkRef, {
-          storyId,
+          storyId: id,
           createdAt: new Date(),
         });
+        setBookmark(true);
       }
-
-      // Update UI
-      setStories((prev) =>
-        prev.map((s) =>
-          s.id === storyId ? { ...s, isBookmarked: !currentStatus } : s
-        )
-      );
-
-      // Update localStorage
-      const updatedCache = stories.map((s) =>
-        s.id === storyId ? { ...s, isBookmarked: !currentStatus } : s
-      );
-      localStorage.setItem("cachedStories", JSON.stringify(updatedCache));
-    } catch (error) {
-      console.error("Bookmark error:", error);
+    } catch (err) {
+      console.error("Bookmark error:", err);
     }
   };
 
-  useEffect(() => {
-    if (stories.length === 0) fetchStories();
-  }, [user]);
+  const handleComment = async () => {
+    if (!user) return alert("Login to comment.");
+    if (!newComment.trim()) return;
 
-  const filteredStories = stories.filter((story) => {
-    const matchesTitle = story.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesGenre = selectedGenre === "All" || story.genre === selectedGenre;
-    return matchesTitle && matchesGenre;
-  });
+    await addDoc(collection(db, "stories", id, "comments"), {
+      text: newComment,
+      author: user.displayName || "Anonymous",
+      photoURL: user.photoURL || "https://ui-avatars.com/api/?name=User",
+      uid: user.uid,
+      createdAt: new Date(),
+    });
 
-  const genres = ["All", ...new Set(stories.map((s) => s.genre))];
+    setNewComment("");
+    const q = query(collection(db, "stories", id, "comments"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    setComments(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  };
+
+  const handleDelete = async (commentId) => {
+    await deleteDoc(doc(db, "stories", id, "comments", commentId));
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+  };
+
+  if (loading || !story) return <div className="text-white text-center py-10">Loading story...</div>;
 
   return (
-    <div className="min-h-screen px-4 py-24 bg-[#231123] text-white">
-      <h2 className="text-3xl font-bold text-center text-[#c30F45] mb-6">Stories</h2>
-
-      <div className="max-w-3xl mx-auto mb-8 flex flex-col sm:flex-row gap-4">
-        <input
-          type="text"
-          placeholder="Search by title..."
-          className="flex-1 p-3 rounded text-white bg-[#2c1b2f] border border-[#c30F45]"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <select
-          value={selectedGenre}
-          onChange={(e) => setSelectedGenre(e.target.value)}
-          className="p-3 rounded text-black"
-        >
-          {genres.map((genre) => (
-            <option key={genre}>{genre}</option>
-          ))}
-        </select>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center h-40">
-          <div className="w-12 h-12 border-4 border-[#c30F45] border-dashed rounded-full animate-spin"></div>
+    <div className="min-h-screen px-4 py-24 bg-[#231123] text-white max-w-3xl mx-auto">
+      <div className="bg-[#2c1b2f] p-6 rounded-lg shadow">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-[#c30F45]">{story.title}</h1>
+          <button onClick={handleBookmark} title="Bookmark this story">
+            {bookmark ? "🔖" : "📑"}
+          </button>
         </div>
-      ) : filteredStories.length === 0 ? (
-        <div className="text-center text-gray-300">No stories found.</div>
-      ) : (
-        <div className="space-y-6 max-w-3xl mx-auto">
-          {filteredStories.map((story) => (
-            <div key={story.id} className="bg-[#2c1b2f] p-6 rounded shadow">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-2xl font-bold text-[#c30F45]">{story.title}</h3>
-                  <p className="text-sm text-gray-300 mb-2">
-                    {story.genre} • by {story.author?.name || "Anonymous"}
-                  </p>
-                </div>
-                <button
-                  onClick={() => toggleBookmark(story.id, story.isBookmarked)}
-                  title="Bookmark"
-                  className="text-xl"
-                >
-                  {story.isBookmarked ? "🔖" : "📑"}
-                </button>
-              </div>
-              <p
-                className="text-gray-200 line-clamp-3"
-                dangerouslySetInnerHTML={{ __html: story.content }}
+
+        <p className="text-sm text-gray-300 mb-2">
+          {story.genre} • by {story.author?.name || "Anonymous"} •{" "}
+          {formatDistanceToNow(new Date(story.createdAt?.seconds * 1000), { addSuffix: true })}
+        </p>
+
+        <div
+          className="prose prose-invert max-w-none text-white mb-6"
+          dangerouslySetInnerHTML={{ __html: story.content }}
+        />
+
+        {/* Like button */}
+        <button
+          disabled={liked}
+          onClick={handleLike}
+          className={`px-4 py-1 rounded mb-4 ${liked ? "bg-gray-600" : "bg-[#c30F45]"}`}
+        >
+          ❤️ {liked ? "Liked" : "Like"} ({likes})
+        </button>
+
+        {/* Comments section */}
+        <div className="mt-6">
+          <h2 className="text-2xl font-semibold mb-4">💬 Comments</h2>
+
+          {comments.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-start space-x-3 bg-[#3a263e] p-3 rounded mb-2"
+            >
+              <img
+                src={c.photoURL}
+                alt="avatar"
+                className="w-10 h-10 rounded-full object-cover"
               />
-              <div className="flex items-center text-sm text-gray-400 mt-3 gap-4">
-                <span>❤️ {story.likeCount} likes</span>
-                <span>💬 {story.commentCount} comments</span>
+              <div className="flex-1">
+                <p className="font-bold text-[#c30F45]">{c.author}</p>
+                <p className="text-sm">{c.text}</p>
+                <p className="text-xs text-gray-400">
+                  {formatDistanceToNow(new Date(c.createdAt?.seconds * 1000), {
+                    addSuffix: true,
+                  })}
+                </p>
+                {user?.uid === c.uid && (
+                  <button
+                    onClick={() => handleDelete(c.id)}
+                    className="text-xs text-red-400 mt-1 hover:underline"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
-              <Link
-                to={`/story/${story.id}`}
-                className="mt-4 inline-block text-[#c30F45] underline hover:text-pink-400"
-              >
-                Read more →
-              </Link>
             </div>
           ))}
 
-          {hasMore && (
-            <div className="text-center mt-6">
+          {user ? (
+            <div className="mt-4">
+              <input
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write a comment..."
+                className="w-full p-2 rounded text-black"
+              />
               <button
-                onClick={() => fetchStories(true)}
-                disabled={loadingMore}
-                className="bg-[#c30F45] px-6 py-2 rounded hover:opacity-90 transition"
+                onClick={handleComment}
+                className="mt-2 px-4 py-1 bg-[#c30F45] rounded"
               >
-                {loadingMore ? "Loading..." : "Load More"}
+                Post
               </button>
             </div>
+          ) : (
+            <p className="text-sm mt-2">🔐 Log in to comment.</p>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default Stories;
+export default StoryDetail;
