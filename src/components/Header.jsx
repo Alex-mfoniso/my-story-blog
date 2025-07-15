@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext"; // Add this import
+import { useAuth } from "../context/AuthContext";
 
 const Header = () => {
   const [open, setOpen] = useState(false);
@@ -7,7 +7,7 @@ const Header = () => {
     return localStorage.getItem("theme") === "dark";
   });
 
-  const { user } = useAuth(); // Get user from context
+  const { user } = useAuth();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -21,7 +21,7 @@ const Header = () => {
   }, [darkMode]);
 
   return (
-    <header className="w-full px-6 py-4 flex justify-between items-center bg-[#231123] text-white  fixed top-0 z-50">
+    <header className="w-full px-6 py-4 flex justify-between items-center bg-[#231123] text-white fixed top-0 z-50">
       <h1 className="text-xl font-bold" style={{ color: "#c30F45" }}>
         Alex's Stories
       </h1>
@@ -46,14 +46,20 @@ const Header = () => {
         <a href="/stories" className="block px-4 py-2 hover:text-[#c30F45]">
           Stories
         </a>
+
         {user ? (
           <a href="/profile" className="block px-4 py-2 hover:text-[#c30F45]">
             Profile
           </a>
         ) : (
-          <a href="/login" className="block px-4 py-2 hover:text-[#c30F45]">
-            Login
-          </a>
+          <>
+            <a href="/login" className="block px-4 py-2 hover:text-[#c30F45]">
+              Login
+            </a>
+            <a href="/register" className="block px-4 py-2 hover:text-[#c30F45]">
+              Register
+            </a>
+          </>
         )}
       </nav>
     </header>

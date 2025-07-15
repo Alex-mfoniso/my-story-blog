@@ -1,24 +1,24 @@
-// src/pages/Login.jsx
+// src/pages/Register.jsx
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const Login = () => {
-  const { login } = useAuth();
+const Register = () => {
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
     try {
-      await login(email, password);
+      await register(email, password);
       navigate("/");
     } catch (err) {
-      setError("Failed to login. Check your credentials.");
+      setError("Failed to create account. " + err.message);
       console.error(err);
     }
   };
@@ -26,10 +26,10 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#231123] text-white">
       <form
-        onSubmit={handleLogin}
+        onSubmit={handleRegister}
         className="bg-[#2c1b2f] p-8 rounded shadow w-full max-w-md space-y-4"
       >
-        <h2 className="text-2xl font-bold text-center text-[#c30F45]">Login</h2>
+        <h2 className="text-2xl font-bold text-center text-[#c30F45]">Register</h2>
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
         <input
@@ -52,13 +52,13 @@ const Login = () => {
           type="submit"
           className="w-full bg-[#c30F45] py-2 rounded hover:opacity-90"
         >
-          Sign In
+          Create Account
         </button>
 
         <p className="text-sm text-center mt-2 text-gray-300">
-          Don’t have an account?{" "}
-          <Link to="/register" className="text-[#c30F45] underline">
-            Register
+          Already have an account?{" "}
+          <Link to="/login" className="text-[#c30F45] underline">
+            Login
           </Link>
         </p>
       </form>
@@ -66,4 +66,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;
