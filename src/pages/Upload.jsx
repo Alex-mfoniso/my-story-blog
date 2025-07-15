@@ -5,7 +5,8 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
-const ADMIN_UID = "jUVRPKVD9VWGk0guVbDT68FTgxj1";
+// const ADMIN_UID = "jUVRPKVD9VWGk0guVbDT68FTgxj1";
+const ADMIN_UID = "hzPSPeMCTvOy6aPVDS5UgnWDJTZ2";
 
 const Upload = () => {
   const { user } = useAuth();
