@@ -1,4 +1,11 @@
-@ -9,6 +9,8 @@ import {
+// src/context/AuthContext.jsx
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import {
   getAuth,
   onAuthStateChanged,
   signInWithPopup,
@@ -7,25 +14,18 @@
   GoogleAuthProvider,
   signOut,
 } from "firebase/auth";
-@ -17,24 +19,46 @@
+import app from "../firebase/fireabase";
+
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const auth = getAuth();
+  const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser); // Firebase handles persistence
-      setUser(firebaseUser);
-    });
-    return () => unsubscribe(); // clean up
-    return () => unsubscribe();
-  }, []);
-
-  const login = () => signInWithPopup(auth, new GoogleAuthProvider());
-  // 🔑 Handle redirect login result on page load
-  useEffect(() => {
+    // Handle redirect result separately on mount for mobile login
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
@@ -33,24 +33,35 @@ export const AuthProvider = ({ children }) => {
         }
       })
       .catch((err) => {
-        console.error("Redirect login error:", err);
+        console.error("Redirect login failed:", err);
+      })
+      .finally(() => {
+        setLoading(false);
       });
+
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      return signInWithRedirect(auth, provider);
-    } else {
-      return signInWithPopup(auth, provider);
-    }
+    return isMobile
+      ? signInWithRedirect(auth, provider)
+      : signInWithPopup(auth, provider);
   };
 
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
