@@ -17,47 +17,44 @@ import {
 
 const AuthContext = createContext();
 
-
-
 export const AuthProvider = ({ children }) => {
   const auth = getAuth();
   const provider = new GoogleAuthProvider();
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // 🔑 Handle redirect login result on page load
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          setUser(result.user);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+      } else {
+        try {
+          const result = await getRedirectResult(auth);
+          if (result?.user) {
+            setUser(result.user);
+          }
+        } catch (err) {
+          console.error("Redirect login failed:", err);
         }
-      })
-      .catch((err) => {
-        console.error("Redirect login error:", err);
-      });
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      return signInWithRedirect(auth, provider);
-    } else {
-      return signInWithPopup(auth, provider);
-    }
+    return isMobile
+      ? signInWithRedirect(auth, provider)
+      : signInWithPopup(auth, provider);
   };
 
   const logout = () => signOut(auth);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
