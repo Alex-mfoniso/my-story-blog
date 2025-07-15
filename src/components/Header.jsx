@@ -48,9 +48,14 @@ const Header = () => {
         </a>
 
         {user ? (
-          <a href="/profile" className="block px-4 py-2 hover:text-[#c30F45]">
-            Profile
-          </a>
+        <>
+            <a href="/bookmarks" className="block px-4 py-2 hover:text-[#c30F45]">
+              My Bookmarks
+            </a>
+            <a href="/profile" className="block px-4 py-2 hover:text-[#c30F45]">
+              Profile
+            </a>
+          </>
         ) : (
           <>
             <a href="/login" className="block px-4 py-2 hover:text-[#c30F45]">
