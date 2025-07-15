@@ -13,45 +13,43 @@ import {
   getRedirectResult,
   GoogleAuthProvider,
   signOut,
+  setPersistence,
+  browserLocalPersistence,
 } from "firebase/auth";
-import app from "../firebase/fireabase";
+
+import app from "../firebase/fireabase"; // ✅ Correct file name!
+const auth = getAuth(app); // ✅ create only once
+const provider = new GoogleAuthProvider();
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Handle redirect result separately on mount for mobile login
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          setUser(result.user);
-        }
-      })
-      .catch((err) => {
-        console.error("Redirect login failed:", err);
-      })
-      .finally(() => {
+    const init = async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+
+        const result = await getRedirectResult(auth);
+        if (result?.user) setUser(result.user);
+
+        onAuthStateChanged(auth, (firebaseUser) => {
+          setUser(firebaseUser);
+          setLoading(false);
+        });
+      } catch (err) {
+        console.error("Auth init error:", err);
         setLoading(false);
-      });
-
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-      } else {
-        setUser(null);
       }
-    });
+    };
 
-    return () => unsubscribe();
+    init();
   }, []);
 
   const login = () => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
     return isMobile
       ? signInWithRedirect(auth, provider)
       : signInWithPopup(auth, provider);

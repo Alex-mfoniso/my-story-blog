@@ -1,0 +1,14 @@
+# Apply security headers to everything except /login and /auth
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+
+# Don't apply COOP/COEP to auth routes
+# Or: explicitly disable them for login
+/login
+  Cross-Origin-Opener-Policy: unsafe-none
+  Cross-Origin-Embedder-Policy: unsafe-none
+
+/auth
+  Cross-Origin-Opener-Policy: unsafe-none
+  Cross-Origin-Embedder-Policy: unsafe-none

@@ -2,7 +2,8 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-
+import { getAuth } from "firebase/auth"; 
+import { setPersistence, browserLocalPersistence } from "firebase/auth";
 const firebaseConfig = {
   // apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   // authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -23,5 +24,6 @@ measurementId: "G-FF92Y5DHH0"
 const app = initializeApp(firebaseConfig);
 export default app;
 export const db = getFirestore(app);
+export const auth = getAuth(app);
 export const storage = getStorage(app);
-// setPersistence(auth, browserLocalPersistence); // ✅ Important for mob
+setPersistence(auth, browserLocalPersistence); // ✅ Important for mob
