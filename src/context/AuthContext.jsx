@@ -80,6 +80,7 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  updateProfile,
   signOut,
 } from "firebase/auth";
 import { auth } from "../firebase/fireabase"; // ✅ make sure this path is correct
@@ -97,10 +98,12 @@ export const AuthProvider = ({ children }) => {
     });
     return () => unsubscribe();
   }, []);
-
-  const register = (email, password) =>
-    createUserWithEmailAndPassword(auth, email, password); // ✅ make sure this is defined
-
+const register = async (email, password, username) => {
+  const res = await createUserWithEmailAndPassword(auth, email, password);
+  await updateProfile(res.user, {
+    displayName: username,
+  });
+};
   const login = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);
 

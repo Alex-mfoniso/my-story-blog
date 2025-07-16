@@ -4,7 +4,6 @@ import { useParams } from "react-router-dom";
 import {
   doc,
   getDoc,
-  updateDoc,
   collection,
   addDoc,
   getDocs,
@@ -29,7 +28,6 @@ const StoryDetail = () => {
   const [bookmark, setBookmark] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch story, likes, comments
   useEffect(() => {
     const fetchStoryData = async () => {
       setLoading(true);
@@ -40,7 +38,6 @@ const StoryDetail = () => {
           setStory({ id: snap.id, ...snap.data() });
         }
 
-        // Likes
         if (user) {
           const likeRef = doc(db, "stories", id, "likes", user.uid);
           const likeSnap = await getDoc(likeRef);
@@ -50,12 +47,10 @@ const StoryDetail = () => {
         const likesCol = await getDocs(collection(db, "stories", id, "likes"));
         setLikes(likesCol.size);
 
-        // Comments
         const q = query(collection(db, "stories", id, "comments"), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
         setComments(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
 
-        // Bookmark status
         if (user) {
           const bookmarkRef = doc(db, "users", user.uid, "bookmarks", id);
           const bookmarkSnap = await getDoc(bookmarkRef);
@@ -105,13 +100,16 @@ const StoryDetail = () => {
 
     await addDoc(collection(db, "stories", id, "comments"), {
       text: newComment,
-      author: user.displayName || "Anonymous",
-      photoURL: user.photoURL || "https://ui-avatars.com/api/?name=User",
-      uid: user.uid,
+      author: {
+        name: user.displayName || user.email || "Anonymous",
+        photoURL: user.photoURL || "https://ui-avatars.com/api/?name=User",
+        uid: user.uid,
+      },
       createdAt: new Date(),
     });
 
     setNewComment("");
+
     const q = query(collection(db, "stories", id, "comments"), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(q);
     setComments(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
@@ -122,7 +120,9 @@ const StoryDetail = () => {
     setComments((prev) => prev.filter((c) => c.id !== commentId));
   };
 
-  if (loading || !story) return <div className="text-white text-center py-10">Loading story...</div>;
+  if (loading || !story) {
+    return <div className="text-white text-center py-10">Loading story...</div>;
+  }
 
   return (
     <div className="min-h-screen px-4 py-24 bg-[#231123] text-white max-w-3xl mx-auto">
@@ -158,24 +158,19 @@ const StoryDetail = () => {
           <h2 className="text-2xl font-semibold mb-4">💬 Comments</h2>
 
           {comments.map((c) => (
-            <div
-              key={c.id}
-              className="flex items-start space-x-3 bg-[#3a263e] p-3 rounded mb-2"
-            >
+            <div key={c.id} className="flex items-start space-x-3 bg-[#3a263e] p-3 rounded mb-2">
               <img
-                src={c.photoURL}
+                src={c.author?.photoURL || "https://ui-avatars.com/api/?name=User"}
                 alt="avatar"
                 className="w-10 h-10 rounded-full object-cover"
               />
               <div className="flex-1">
-                <p className="font-bold text-[#c30F45]">{c.author}</p>
+                <p className="font-bold text-[#c30F45]">{c.author?.name || "Anonymous"}</p>
                 <p className="text-sm">{c.text}</p>
                 <p className="text-xs text-gray-400">
-                  {formatDistanceToNow(new Date(c.createdAt?.seconds * 1000), {
-                    addSuffix: true,
-                  })}
+                  {formatDistanceToNow(new Date(c.createdAt?.seconds * 1000), { addSuffix: true })}
                 </p>
-                {user?.uid === c.uid && (
+                {user?.uid === c.author?.uid && (
                   <button
                     onClick={() => handleDelete(c.id)}
                     className="text-xs text-red-400 mt-1 hover:underline"

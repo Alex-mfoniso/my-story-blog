@@ -7,6 +7,7 @@ const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const [username, setUsername] = useState(""); // added
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,7 +16,7 @@ const Register = () => {
     e.preventDefault();
     setError("");
     try {
-      await register(email, password);
+      await register(email, password, username); // pass username
       navigate("/");
     } catch (err) {
       setError("Failed to create account. " + err.message);
@@ -33,11 +34,21 @@ const Register = () => {
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
         <input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+          className="w-full p-3 rounded bg-gray-800 text-white"
+        />
+
+        <input
           type="email"
           placeholder="Email"
           className="w-full p-3 rounded bg-gray-800 text-white"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
 
         <input
@@ -46,6 +57,7 @@ const Register = () => {
           className="w-full p-3 rounded bg-gray-800 text-white"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
         <button
