@@ -139,3 +139,11 @@ Admin-only upload panel?
 | `pages/Story.jsx`           | View full story with comments + like button         |
 | `pages/Login.jsx`           | Login page with Firebase Auth                       |
 | `components/CommentBox.jsx` | Comment submission UI (hidden if not logged in)     |
+
+cloud name
+dnartpsxj
+API Key
+uozaFV2Q8kPGuioyRGsST4HFOA8
+	
+API Secret
+946147772569226
