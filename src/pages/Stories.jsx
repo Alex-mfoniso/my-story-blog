@@ -103,7 +103,7 @@ const Stories = () => {
   };
 
   useEffect(() => {
-    fetchStories(); // Always fetch fresh stories on mount
+    fetchStories();
   }, [user]);
 
   useEffect(() => {
@@ -119,21 +119,21 @@ const Stories = () => {
   const genres = ["All", ...new Set(stories.map((s) => s.genre))];
 
   return (
-    <div className="min-h-screen px-4 py-24 bg-[#231123] text-white">
-      <h2 className="text-3xl font-bold text-center text-[#c30F45] mb-6">Stories</h2>
+    <div className="min-h-screen px-4 py-24 bg-gradient-to-br from-[#0f0f1c] via-[#1a1a2e] to-[#1f1f38] text-white">
+      <h2 className="text-4xl font-bold text-center text-[#c30F45] mb-10">📚 Explore Stories</h2>
 
-      <div className="max-w-3xl mx-auto mb-8 flex flex-col sm:flex-row gap-4">
+      <div className="max-w-5xl mx-auto mb-8 flex flex-col sm:flex-row gap-4">
         <input
           type="text"
           placeholder="Search by title..."
-          className="flex-1 p-3 rounded text-white"
+className="flex-1 p-3 rounded-lg bg-[#1f1f38]/70 text-white placeholder-gray-400 border border-[#3a2e4e] focus:outline-none focus:ring-2 focus:ring-pink-500"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         <select
           value={selectedGenre}
           onChange={(e) => setSelectedGenre(e.target.value)}
-          className="p-3 rounded text-black"
+className="p-3 rounded-lg bg-[#1f1f38]/70 text-white border border-[#3a2e4e] focus:outline-none focus:ring-2 focus:ring-pink-500"
         >
           {genres.map((genre) => (
             <option key={genre}>{genre}</option>
@@ -148,47 +148,53 @@ const Stories = () => {
       ) : filteredStories.length === 0 ? (
         <div className="text-center text-gray-300">No stories found.</div>
       ) : (
-        <div className="space-y-6 max-w-3xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {filteredStories.map((story) => (
-            <div key={story.id} className="bg-[#2c1b2f] p-6 rounded shadow">
-              <h3 className="text-2xl font-bold text-[#c30F45]">{story.title}</h3>
-              <p className="text-sm text-gray-300 mb-2">
-                {story.genre} • by {story.author?.name || "Anonymous"}
-              </p>
-              <p
-                className="text-gray-200 line-clamp-3"
-                dangerouslySetInnerHTML={{ __html: story.content }}
-              />
-              <div className="flex items-center text-sm text-gray-400 mt-3 gap-4">
-                <span>❤️ {story.likeCount} likes</span>
-                <span>💬 {story.commentCount} comments</span>
-                <button
-                  onClick={() => toggleBookmark(story.id)}
-                  className="ml-auto text-[#c30F45] hover:text-pink-400"
+            <div key={story.id} className="bg-[#1f1f38]/80 backdrop-blur-sm border border-[#3a2e4e] rounded-lg overflow-hidden shadow-lg hover:shadow-pink-400/20 transition duration-300"
+>
+              {story.image && (
+                <img src={story.image} alt="cover" className="w-full h-48 object-cover" />
+              )}
+              <div className="p-5">
+                <h3 className="text-xl font-bold text-[#c30F45] mb-1">{story.title}</h3>
+                <p className="text-sm text-gray-400 mb-2">
+                  {story.genre} • by {story.author?.name || "Anonymous"}
+                </p>
+                <p
+                  className="text-gray-200 text-sm line-clamp-3 mb-4"
+                  dangerouslySetInnerHTML={{ __html: story.content }}
+                />
+                <div className="flex items-center text-xs text-gray-400 gap-4">
+                  <span>❤️ {story.likeCount}</span>
+                  <span>💬 {story.commentCount}</span>
+                  <button
+                    onClick={() => toggleBookmark(story.id)}
+                    className="ml-auto text-[#c30F45] hover:text-pink-400"
+                  >
+                    {bookmarkIds.has(story.id) ? "🔖" : "📑"}
+                  </button>
+                </div>
+                <Link
+                  to={`/story/${story.id}`}
+                  className="mt-4 inline-block text-sm text-[#c30F45] underline hover:text-pink-400"
                 >
-                  {bookmarkIds.has(story.id) ? "🔖 Bookmarked" : "📑 Bookmark"}
-                </button>
+                  Read more →
+                </Link>
               </div>
-              <Link
-                to={`/story/${story.id}`}
-                className="mt-4 inline-block text-[#c30F45] underline hover:text-pink-400"
-              >
-                Read more →
-              </Link>
             </div>
           ))}
+        </div>
+      )}
 
-          {hasMore && (
-            <div className="text-center mt-6">
-              <button
-                onClick={() => fetchStories(true)}
-                disabled={loadingMore}
-                className="bg-[#c30F45] px-6 py-2 rounded hover:opacity-90 transition"
-              >
-                {loadingMore ? "Loading..." : "Load More"}
-              </button>
-            </div>
-          )}
+      {hasMore && (
+        <div className="text-center mt-10">
+          <button
+            onClick={() => fetchStories(true)}
+            disabled={loadingMore}
+            className="bg-[#c30F45] px-6 py-2 rounded hover:opacity-90 transition"
+          >
+            {loadingMore ? "Loading..." : "Load More"}
+          </button>
         </div>
       )}
     </div>
