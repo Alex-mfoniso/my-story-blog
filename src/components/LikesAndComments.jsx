@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+
 import { db } from "../firebase/fireabase";
 import {
   doc,
@@ -18,6 +19,7 @@ import { formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 
 const LikesAndComments = ({ storyId }) => {
+  const [likeLoading, setLikeLoading] = useState(false);
   const { user } = useAuth();
   const [likesCount, setLikesCount] = useState(0);
   const [liked, setLiked] = useState(false);
@@ -81,19 +83,27 @@ const LikesAndComments = ({ storyId }) => {
     window.location.reload();
   };
 
-  const toggleLike = async () => {
-    if (!user) return alert("Login to like");
-    const ref = doc(db, "stories", storyId, "likes", user.uid);
-    if (liked) {
-      await deleteDoc(ref);
-      setLiked(false);
-      setLikesCount((prev) => prev - 1);
-    } else {
-      await setDoc(ref, { likedAt: serverTimestamp() });
-      setLiked(true);
-      setLikesCount((prev) => prev + 1);
-    }
-  };
+ const toggleLike = async () => {
+  if (!user || likeLoading) return;
+  setLikeLoading(true);
+
+  const ref = doc(db, "stories", storyId, "likes", user.uid);
+  const snap = await getDoc(ref);
+  const alreadyLiked = snap.exists();
+
+  if (alreadyLiked) {
+    await deleteDoc(ref);
+    setLiked(false);
+    setLikesCount((prev) => Math.max(prev - 1, 0));
+  } else {
+    await setDoc(ref, { likedAt: serverTimestamp() });
+    setLiked(true);
+    setLikesCount((prev) => prev + 1);
+  }
+
+  setLikeLoading(false);
+};
+
 
   const postComment = async () => {
     if (!user || !newComment.trim()) return;
@@ -414,15 +424,16 @@ const LikesAndComments = ({ storyId }) => {
 
   return (
     <div className="mt-10">
-      <button
-        onClick={toggleLike}
-        className={`px-6 py-2 mb-4 rounded-full transition-transform ${
-          liked ? "bg-[#c30F45]" : "bg-gray-500 hover:scale-110"
-        } animate-pulse`}
-      >
-        <span className="inline-block">{liked ? "❤️" : "💔"}</span>{" "}
-        {liked ? "Unlike" : "Like"} {likesCount}
-      </button>
+    <button
+  onClick={toggleLike}
+  disabled={likeLoading}
+  className={`px-6 py-2 mb-4 rounded-full transition-transform ${
+    liked ? "bg-[#c30F45]" : "bg-gray-500 hover:scale-110"
+  } ${likeLoading ? "opacity-50 cursor-not-allowed" : "animate-pulse"}`}
+>
+  <span>{liked ? "❤️" : "💔"}</span> {liked ? "Unlike" : "Like"} {likesCount}
+</button>
+
 
       <div className="mt-6">
         <h3 className="text-2xl font-semibold mb-4">💬 Comments</h3>
