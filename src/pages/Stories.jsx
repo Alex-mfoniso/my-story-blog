@@ -64,7 +64,12 @@ const Stories = () => {
       );
 
       const updatedStories = loadMore
-        ? [...stories, ...enrichedData.filter(s => !stories.some(st => st.id === s.id))]
+        ? [
+            ...stories,
+            ...enrichedData.filter(
+              (s) => !stories.some((st) => st.id === s.id)
+            ),
+          ]
         : enrichedData;
 
       setStories(updatedStories);
@@ -85,8 +90,10 @@ const Stories = () => {
 
   const fetchBookmarks = useCallback(async () => {
     if (!user) return;
-    const snapshot = await getDocs(collection(db, "users", user.uid, "bookmarks"));
-    const ids = new Set(snapshot.docs.map(doc => doc.id));
+    const snapshot = await getDocs(
+      collection(db, "users", user.uid, "bookmarks")
+    );
+    const ids = new Set(snapshot.docs.map((doc) => doc.id));
     setBookmarkIds(ids);
   }, [user]);
 
@@ -111,8 +118,11 @@ const Stories = () => {
   }, [fetchBookmarks]);
 
   const filteredStories = stories.filter((story) => {
-    const matchesTitle = story.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesGenre = selectedGenre === "All" || story.genre === selectedGenre;
+    const matchesTitle = story.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesGenre =
+      selectedGenre === "All" || story.genre === selectedGenre;
     return matchesTitle && matchesGenre;
   });
 
@@ -120,20 +130,22 @@ const Stories = () => {
 
   return (
     <div className="min-h-screen px-4 py-24 bg-gradient-to-br from-[#0f0f1c] via-[#1a1a2e] to-[#1f1f38] text-white">
-      <h2 className="text-4xl font-bold text-center text-[#c30F45] mb-10">📚 Explore Stories</h2>
+      <h2 className="text-4xl font-bold text-center text-[#c30F45] mb-10">
+        📚 Explore Stories
+      </h2>
 
       <div className="max-w-5xl mx-auto mb-8 flex flex-col sm:flex-row gap-4">
         <input
           type="text"
           placeholder="Search by title..."
-className="flex-1 p-3 rounded-lg bg-[#1f1f38]/70 text-white placeholder-gray-400 border border-[#3a2e4e] focus:outline-none focus:ring-2 focus:ring-pink-500"
+          className="flex-1 p-3 rounded-lg bg-[#1f1f38]/70 text-white placeholder-gray-400 border border-[#3a2e4e] focus:outline-none focus:ring-2 focus:ring-pink-500"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         <select
           value={selectedGenre}
           onChange={(e) => setSelectedGenre(e.target.value)}
-className="p-3 rounded-lg bg-[#1f1f38]/70 text-white border border-[#3a2e4e] focus:outline-none focus:ring-2 focus:ring-pink-500"
+          className="p-3 rounded-lg bg-[#1f1f38]/70 text-white border border-[#3a2e4e] focus:outline-none focus:ring-2 focus:ring-pink-500"
         >
           {genres.map((genre) => (
             <option key={genre}>{genre}</option>
@@ -150,13 +162,21 @@ className="p-3 rounded-lg bg-[#1f1f38]/70 text-white border border-[#3a2e4e] foc
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {filteredStories.map((story) => (
-            <div key={story.id} className="bg-[#1f1f38]/80 backdrop-blur-sm border border-[#3a2e4e] rounded-lg overflow-hidden shadow-lg hover:shadow-pink-400/20 transition duration-300"
->
+            <div
+              key={story.id}
+              className="bg-[#1f1f38]/80 backdrop-blur-sm border border-[#3a2e4e] rounded-lg overflow-hidden shadow-lg hover:shadow-pink-400/20 transition duration-300"
+            >
               {story.image && (
-                <img src={story.image} alt="cover" className="w-full h-48 object-cover" />
+                <img
+                  src={story.image}
+                  alt="cover"
+                  className="w-full h-48 object-cover"
+                />
               )}
               <div className="p-5">
-                <h3 className="text-xl font-bold text-[#c30F45] mb-1">{story.title}</h3>
+                <h3 className="text-xl font-bold text-[#c30F45] mb-1">
+                  {story.title}
+                </h3>
                 <p className="text-sm text-gray-400 mb-2">
                   {story.genre} • by {story.author?.name || "Anonymous"}
                 </p>

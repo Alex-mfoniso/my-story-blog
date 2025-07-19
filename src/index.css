@@ -5,7 +5,7 @@
 @import "tailwindcss/utilities"; */
 
 body {
-   /* @apply bg-[#231123] text-white; */
+   @apply bg-gradient-to-br from-[#0f0f1c] via-[#1a1a2e] to-[#1f1f38] text-white;
   font-family: "Open Sans", sans-serif;
 }
 
