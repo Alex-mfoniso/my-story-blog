@@ -25,10 +25,10 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#231123] text-white">
+    <div className="min-h-screen flex items-center justify-center  text-white">
       <form
         onSubmit={handleRegister}
-        className="bg-[#2c1b2f] p-8 rounded shadow w-full max-w-md space-y-4"
+        className=" bg-[#1f1f38]/80 backdrop-blur-sm p-6 rounded-xl shadow-inner border border-[#2a2a45] w-full max-w-md space-y-4"
       >
         <h2 className="text-2xl font-bold text-center text-[#c30F45]">Register</h2>
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
