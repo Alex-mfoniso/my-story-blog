@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-
 import { db } from "../firebase/fireabase";
 import {
   doc,
@@ -31,9 +30,7 @@ const LikesAndComments = ({ storyId }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const likesSnap = await getDocs(
-        collection(db, "stories", storyId, "likes")
-      );
+      const likesSnap = await getDocs(collection(db, "stories", storyId, "likes"));
       setLikesCount(likesSnap.size);
 
       if (user) {
@@ -42,10 +39,7 @@ const LikesAndComments = ({ storyId }) => {
         setLiked(likeSnap.exists());
       }
 
-      const q = query(
-        collection(db, "stories", storyId, "comments"),
-        orderBy("createdAt", "desc")
-      );
+      const q = query(collection(db, "stories", storyId, "comments"), orderBy("createdAt", "desc"));
       const snap = await getDocs(q);
       const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setComments(data);
@@ -53,102 +47,75 @@ const LikesAndComments = ({ storyId }) => {
 
     fetchData();
   }, [storyId, user]);
-  const toggleReplyLike = async (commentId, replyId) => {
-    if (!user) return alert("Login to like replies");
 
-    const commentDoc = doc(db, "stories", storyId, "comments", commentId);
-    const snap = await getDoc(commentDoc);
-    if (!snap.exists()) return;
+  const toggleLike = async () => {
+    if (!user || likeLoading) return;
+    setLikeLoading(true);
 
-    const commentData = snap.data();
+    const ref = doc(db, "stories", storyId, "likes", user.uid);
+    const snap = await getDoc(ref);
+    const alreadyLiked = snap.exists();
 
-    const updateLikes = (replies) =>
-      replies.map((r) => {
-        if (r.id === replyId) {
-          const hasLiked = r.likes?.includes(user.uid);
-          return {
-            ...r,
-            likes: hasLiked
-              ? r.likes.filter((uid) => uid !== user.uid)
-              : [...(r.likes || []), user.uid],
-          };
-        } else if (r.replies && r.replies.length > 0) {
-          return { ...r, replies: updateLikes(r.replies) };
-        }
-        return r;
-      });
+    if (alreadyLiked) {
+      await deleteDoc(ref);
+      setLiked(false);
+      setLikesCount((prev) => Math.max(prev - 1, 0));
+    } else {
+      await setDoc(ref, { likedAt: serverTimestamp() });
+      setLiked(true);
+      setLikesCount((prev) => prev + 1);
+    }
 
-    const updatedReplies = updateLikes(commentData.replies || []);
-    await updateDoc(commentDoc, { replies: updatedReplies });
-    window.location.reload();
+    setLikeLoading(false);
   };
-
- const toggleLike = async () => {
-  if (!user || likeLoading) return;
-  setLikeLoading(true);
-
-  const ref = doc(db, "stories", storyId, "likes", user.uid);
-  const snap = await getDoc(ref);
-  const alreadyLiked = snap.exists();
-
-  if (alreadyLiked) {
-    await deleteDoc(ref);
-    setLiked(false);
-    setLikesCount((prev) => Math.max(prev - 1, 0));
-  } else {
-    await setDoc(ref, { likedAt: serverTimestamp() });
-    setLiked(true);
-    setLikesCount((prev) => prev + 1);
-  }
-
-  setLikeLoading(false);
-};
-
 
   const postComment = async () => {
     if (!user || !newComment.trim()) return;
-    await addDoc(collection(db, "stories", storyId, "comments"), {
+    const newDoc = await addDoc(collection(db, "stories", storyId, "comments"), {
       text: newComment,
       author: {
         uid: user.uid,
         name: user.displayName || user.email,
-        photoURL:
-          user.photoURL ||
-          `https://ui-avatars.com/api/?name=${user.displayName}`,
+        photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`,
       },
-      createdAt: serverTimestamp(),
+      createdAt: new Date(),
       replies: [],
     });
+    const newCommentObj = {
+      id: newDoc.id,
+      text: newComment,
+      author: {
+        uid: user.uid,
+        name: user.displayName || user.email,
+        photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`,
+      },
+      createdAt: new Date(),
+      replies: [],
+    };
+    setComments([newCommentObj, ...comments]);
     setNewComment("");
-    window.location.reload();
   };
 
-  const toggleCollapse = (id) => {
-    setCollapseMap((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const deleteComment = async (id) => {
-    await deleteDoc(doc(db, "stories", storyId, "comments", id));
-    setComments((prev) => prev.filter((c) => c.id !== id));
-  };
   const toggleCommentLike = async (commentId) => {
-  if (!user) return alert("Login to like comments");
+    if (!user) return alert("Login to like comments");
 
-  const commentRef = doc(db, "stories", storyId, "comments", commentId);
-  const snap = await getDoc(commentRef);
-  if (!snap.exists()) return;
+    const commentRef = doc(db, "stories", storyId, "comments", commentId);
+    const snap = await getDoc(commentRef);
+    if (!snap.exists()) return;
 
-  const data = snap.data();
-  const hasLiked = Array.isArray(data.likes) && data.likes.includes(user.uid);
+    const data = snap.data();
+    const hasLiked = Array.isArray(data.likes) && data.likes.includes(user.uid);
+    const updatedLikes = hasLiked
+      ? data.likes.filter((uid) => uid !== user.uid)
+      : [...(data.likes || []), user.uid];
 
-  const updatedLikes = hasLiked
-    ? data.likes.filter((uid) => uid !== user.uid)
-    : [...(data.likes || []), user.uid];
-
-  await updateDoc(commentRef, { likes: updatedLikes });
-  window.location.reload();
-};
-
+    await updateDoc(commentRef, { likes: updatedLikes });
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId ? { ...comment, likes: updatedLikes } : comment
+      )
+    );
+  };
 
   const handleReplyChange = (key, value) => {
     setReplyMap((prev) => ({ ...prev, [key]: value }));
@@ -161,10 +128,7 @@ const LikesAndComments = ({ storyId }) => {
 
     const commentData = snap.data();
 
-    // Determine the correct key
-    const replyKey = parentReplyId
-      ? `${commentId}_${parentReplyId}_new`
-      : commentId;
+    const replyKey = parentReplyId ? `${commentId}_${parentReplyId}_new` : commentId;
     const replyText = replyMap[replyKey]?.trim();
     if (!replyText) return;
 
@@ -174,25 +138,19 @@ const LikesAndComments = ({ storyId }) => {
       author: {
         uid: user.uid,
         name: user.displayName || user.email,
-        photoURL:
-          user.photoURL ||
-          `https://ui-avatars.com/api/?name=${user.displayName}`,
+        photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`,
       },
       createdAt: new Date(),
       replies: [],
       likes: [],
     };
 
-    const addNestedReply = (replies) => {
-      return replies.map((r) => {
-        if (r.id === parentReplyId) {
-          return { ...r, replies: [...(r.replies || []), newReply] };
-        } else if (r.replies && r.replies.length > 0) {
-          return { ...r, replies: addNestedReply(r.replies) };
-        }
-        return r;
-      });
-    };
+    const addNestedReply = (replies) =>
+      replies.map((r) =>
+        r.id === parentReplyId
+          ? { ...r, replies: [...(r.replies || []), newReply] }
+          : { ...r, replies: addNestedReply(r.replies || []) }
+      );
 
     const updatedReplies = parentReplyId
       ? addNestedReply(commentData.replies || [])
@@ -200,176 +158,12 @@ const LikesAndComments = ({ storyId }) => {
 
     await updateDoc(commentDoc, { replies: updatedReplies });
     setReplyMap((prev) => ({ ...prev, [replyKey]: "" }));
-    window.location.reload();
-  };
-
-  //   const postReply = async (commentId, parentReplyId = null) => {
-  //     const commentDoc = doc(db, "stories", storyId, "comments", commentId);
-  //     const snap = await getDoc(commentDoc);
-  //     if (!snap.exists()) return;
-
-  //     const commentData = snap.data();
-  //     const newReply = {
-  //       id: uuidv4(),
-  //       text: replyMap[parentReplyId || commentId],
-  //       author: {
-  //         uid: user.uid,
-  //         name: user.displayName || user.email,
-  //         photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`,
-  //       },
-  //       createdAt: new Date(),
-  //       replies: [],
-  //     };
-
-  //     const updatedReplies = parentReplyId
-  //       ? commentData.replies.map((r) =>
-  //           r.id === parentReplyId
-  //             ? { ...r, replies: [...(r.replies || []), newReply] }
-  //             : r
-  //         )
-  //       : [...(commentData.replies || []), newReply];
-
-  //     await updateDoc(commentDoc, { replies: updatedReplies });
-  //     setReplyMap((prev) => ({ ...prev, [parentReplyId || commentId]: "" }));
-  //     window.location.reload();
-  //   };
-
- const renderReplies = (replies, commentId) =>
-  replies.map((r) => {
-    const replyTime = r.createdAt?.seconds
-      ? new Date(r.createdAt.seconds * 1000)
-      : r.createdAt instanceof Date
-      ? r.createdAt
-      : null;
-    const canEditReply =
-      replyTime && differenceInMinutes(new Date(), replyTime) <= 15;
-    const key = `${commentId}_${r.id}`;
-    const isEditing = editMap[key];
-    const hasLiked = Array.isArray(r.likes) && r.likes.includes(user?.uid);
-    const likesCount = Array.isArray(r.likes) ? r.likes.length : 0;
-
-    return (
-<div key={r.id} className="ml-10 mt-2 bg-[#1f1f38]/80 backdrop-blur-md border border-[#2a2a3c] p-3 rounded-xl">
-        <div className="flex gap-2 items-start">
-          <img src={r.author.photoURL} className="w-8 h-8 rounded-full" />
-          <div className="flex-1">
-            <p className="font-bold text-pink-300">{r.author.name}</p>
-
-            {isEditing ? (
-              <>
-                <textarea
-                  value={replyMap[key] || r.text}
-                  onChange={(e) => handleReplyChange(key, e.target.value)}
-                  className="w-full text-sm p-1 text-black rounded"
-                />
-                <button
-                  onClick={() =>
-                    saveEditedReply(commentId, r.id, replyMap[key] || r.text)
-                  }
-                  className="text-xs text-green-400 hover:underline mt-1"
-                >
-                  Save
-                </button>
-              </>
-            ) : (
-              <p>{r.text}</p>
-            )}
-
-            <p className="text-xs text-gray-400">
-              {replyTime
-                ? formatDistanceToNow(replyTime, { addSuffix: true })
-                : "Just now"}
-            </p>
-
-            <div className="flex gap-3 text-xs mt-1 items-center">
-              {/* ❤️ Like Button */}
-              {user && (
-                <button
-                  className={`hover:underline ${
-                    hasLiked ? "text-pink-400" : "text-gray-300"
-                  }`}
-                  onClick={() => toggleReplyLike(commentId, r.id)}
-                >
-                  {hasLiked ? "❤️" : "🤍"} {likesCount}
-                </button>
-              )}
-
-              {/* Edit/Delete for Author */}
-              {user?.uid === r.author.uid && canEditReply && (
-                <>
-                  <button
-                    onClick={() =>
-                      setEditMap((prev) => ({ ...prev, [key]: true }))
-                    }
-                    className="text-yellow-300 hover:underline"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="text-red-400 hover:underline"
-                    onClick={() => deleteNestedReply(commentId, r.id)}
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-
-              {/* Reply */}
-              {user && (
-                <button
-                  className="text-blue-300 hover:underline"
-                  onClick={() => handleReplyChange(key + "_new", "")}
-                >
-                  Reply
-                </button>
-              )}
-            </div>
-
-            {/* New nested reply input */}
-            {replyMap[key + "_new"] !== undefined && (
-              <div className="mt-1">
-                <textarea
-                  value={replyMap[key + "_new"]}
-                  onChange={(e) =>
-                    handleReplyChange(key + "_new", e.target.value)
-                  }
-                  placeholder="Write a nested reply..."
-                  className="w-full text-sm p-1 text-black rounded"
-                />
-                <button
-                  onClick={() => postReply(commentId, r.id)}
-                  className="mt-1 px-3 py-1 bg-[#c30F45] text-white text-xs rounded"
-                >
-                  Reply
-                </button>
-              </div>
-            )}
-
-            {/* Nested replies */}
-            {Array.isArray(r.replies) &&
-              r.replies.length > 0 &&
-              renderReplies(r.replies, commentId)}
-          </div>
-        </div>
-      </div>
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId ? { ...comment, replies: updatedReplies } : comment
+      )
     );
-  });
-
-
-  //   const saveEditedReply = async (commentId, replyId, newText) => {
-  //     const commentDoc = doc(db, "stories", storyId, "comments", commentId);
-  //     const snap = await getDoc(commentDoc);
-  //     if (!snap.exists()) return;
-
-  //     const commentData = snap.data();
-  //     const updatedReplies = commentData.replies.map((r) =>
-  //       r.id === replyId ? { ...r, text: newText } : r
-  //     );
-
-  //     await updateDoc(commentDoc, { replies: updatedReplies });
-  //     setEditMap((prev) => ({ ...prev, [`${commentId}_${replyId}`]: false }));
-  //     window.location.reload();
-  //   };
+  };
 
   const saveEditedReply = async (commentId, replyId, newText) => {
     const commentDoc = doc(db, "stories", storyId, "comments", commentId);
@@ -378,22 +172,63 @@ const LikesAndComments = ({ storyId }) => {
 
     const commentData = snap.data();
 
-    const updateNestedReply = (replies) => {
-      return replies.map((r) => {
-        if (r.id === replyId) {
-          return { ...r, text: newText };
-        } else if (r.replies && r.replies.length > 0) {
-          return { ...r, replies: updateNestedReply(r.replies) };
-        }
-        return r;
-      });
-    };
+    const updateNestedReply = (replies) =>
+      replies.map((r) =>
+        r.id === replyId
+          ? { ...r, text: newText }
+          : { ...r, replies: updateNestedReply(r.replies || []) }
+      );
 
     const updatedReplies = updateNestedReply(commentData.replies || []);
     await updateDoc(commentDoc, { replies: updatedReplies });
-
     setEditMap((prev) => ({ ...prev, [`${commentId}_${replyId}`]: false }));
-    window.location.reload();
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId ? { ...comment, replies: updatedReplies } : comment
+      )
+    );
+  };
+
+  const toggleReplyLike = async (commentId, replyId) => {
+    if (!user) return alert("Login to like replies");
+
+    const commentDoc = doc(db, "stories", storyId, "comments", commentId);
+    const snap = await getDoc(commentDoc);
+    if (!snap.exists()) return;
+    const commentData = snap.data();
+
+    const updateLikes = (replies) =>
+      replies.map((r) => {
+        if (r.id === replyId) {
+          const hasLiked = r.likes?.includes(user.uid);
+          return {
+            ...r,
+            likes: hasLiked
+              ? r.likes.filter((uid) => uid !== user.uid)
+              : [...(r.likes || []), user.uid],
+          };
+        } else if (r.replies?.length) {
+          return { ...r, replies: updateLikes(r.replies) };
+        }
+        return r;
+      });
+
+    const updatedReplies = updateLikes(commentData.replies || []);
+    await updateDoc(commentDoc, { replies: updatedReplies });
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId ? { ...comment, replies: updatedReplies } : comment
+      )
+    );
+  };
+
+  const deleteComment = async (id) => {
+    await deleteDoc(doc(db, "stories", storyId, "comments", id));
+    setComments((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const toggleCollapse = (id) => {
+    setCollapseMap((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const deleteNestedReply = async (commentId, replyId) => {
@@ -403,24 +238,136 @@ const LikesAndComments = ({ storyId }) => {
 
     const commentData = snap.data();
 
-    const removeReply = (replies) => {
-      return replies
+    const removeReply = (replies) =>
+      replies
         .map((r) =>
-          r.id === replyId
-            ? null
-            : {
-                ...r,
-                replies: r.replies ? removeReply(r.replies) : [],
-              }
+          r.id === replyId ? null : { ...r, replies: removeReply(r.replies || []) }
         )
         .filter(Boolean);
-    };
 
     const updatedReplies = removeReply(commentData.replies || []);
     await updateDoc(commentDoc, { replies: updatedReplies });
-
-    window.location.reload();
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId ? { ...comment, replies: updatedReplies } : comment
+      )
+    );
   };
+const renderReplies = (replies, commentId, parentId = null, level = 1) => {
+  return replies.map((reply) => {
+    const replyKey = `${commentId}_${reply.id}`;
+    const isEditing = editMap[replyKey];
+    const canEdit =
+      reply.createdAt instanceof Date &&
+      differenceInMinutes(new Date(), reply.createdAt) <= 15;
+    const hasLiked = Array.isArray(reply.likes) && reply.likes.includes(user?.uid);
+    const likesCount = Array.isArray(reply.likes) ? reply.likes.length : 0;
+
+    return (
+      <div
+        key={reply.id}
+        className={`mt-3 ml-${level * 4} p-2 bg-[#2a2a3c] rounded`}
+      >
+        <div className="flex items-start gap-2">
+          <img
+            src={reply.author.photoURL}
+            alt={reply.author.name}
+            className="w-8 h-8 rounded-full"
+          />
+          <div className="flex-1">
+            <p className="font-semibold text-[#c30F45]">{reply.author.name}</p>
+
+            {isEditing ? (
+              <>
+                <textarea
+                  value={replyMap[replyKey] || reply.text}
+                  onChange={(e) =>
+                    handleReplyChange(replyKey, e.target.value)
+                  }
+                  className="w-full p-1 text-white rounded"
+                />
+                <button
+                  onClick={() =>
+                    saveEditedReply(commentId, reply.id, replyMap[replyKey])
+                  }
+                  className="text-green-400 text-xs hover:underline mt-1"
+                >
+                  Save
+                </button>
+              </>
+            ) : (
+              <p className="text-white">{reply.text}</p>
+            )}
+
+            <p className="text-xs text-gray-400">
+              {reply.createdAt instanceof Date
+                ? formatDistanceToNow(reply.createdAt, { addSuffix: true })
+                : "Just now"}
+            </p>
+
+            <div className="flex gap-2 text-xs mt-1">
+              {user && (
+                <button
+                  onClick={() => toggleReplyLike(commentId, reply.id)}
+                  className={`hover:underline ${
+                    hasLiked ? "text-pink-400" : "text-gray-300"
+                  }`}
+                >
+                  {hasLiked ? "❤️" : "🤍"} {likesCount}
+                </button>
+              )}
+              {user?.uid === reply.author.uid && canEdit && (
+                <>
+                  <button
+                    onClick={() =>
+                      setEditMap((prev) => ({
+                        ...prev,
+                        [replyKey]: true,
+                      }))
+                    }
+                    className="text-yellow-300 hover:underline"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deleteNestedReply(commentId, reply.id)}
+                    className="text-red-400 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Reply to this reply */}
+            <div className="mt-2">
+              <textarea
+                value={replyMap[`${replyKey}_new`] || ""}
+                onChange={(e) =>
+                  handleReplyChange(`${replyKey}_new`, e.target.value)
+                }
+                placeholder="Write a reply..."
+                className="w-full p-1 text-sm text-white rounded"
+              />
+              <button
+                onClick={() =>
+                  postReply(commentId, reply.id)
+                }
+                className="mt-1 px-3 py-1 bg-[#c30F45] text-white text-sm rounded"
+              >
+                Reply
+              </button>
+            </div>
+
+            {/* Render nested replies */}
+            {Array.isArray(reply.replies) &&
+              renderReplies(reply.replies, commentId, reply.id, level + 1)}
+          </div>
+        </div>
+      </div>
+    );
+  });
+};
 
   return (
     <div className="mt-10">
@@ -467,7 +414,7 @@ const LikesAndComments = ({ storyId }) => {
                 onChange={(e) =>
                   handleReplyChange(c.id, e.target.value)
                 }
-                className="w-full p-2 rounded text-black"
+                className="w-full p-2 rounded text-white"
               />
               <button
                 onClick={async () => {
@@ -546,7 +493,7 @@ const LikesAndComments = ({ storyId }) => {
                   handleReplyChange(c.id, e.target.value)
                 }
                 placeholder="Write a reply..."
-                className="w-full p-1 text-sm text-black rounded"
+                className="w-full p-1 text-sm text-white rounded"
               />
               <button
                 onClick={() => postReply(c.id)}
@@ -573,7 +520,7 @@ const LikesAndComments = ({ storyId }) => {
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Write a comment..."
-              className="w-full p-2 rounded text-black h-20"
+              className="w-full p-2 rounded text-white h-20"
             />
             <button
               onClick={postComment}
