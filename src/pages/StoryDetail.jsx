@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, setDoc,getDoc,deleteDoc } from "firebase/firestore";
 import { db } from "../firebase/fireabase";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "../context/AuthContext";
 import LikesAndComments from "../components/LikesAndComments";
+
+ 
 
 const WORDS_PER_PAGE = 250;
 
@@ -43,21 +45,22 @@ const StoryDetail = () => {
     fetchStory();
   }, [id, user]);
 
-  const toggleBookmark = async () => {
-    if (!user) return alert("Login to bookmark.");
-    const ref = doc(db, "users", user.uid, "bookmarks", id);
-    try {
-      if (bookmark) {
-        await deleteDoc(ref);
-        setBookmark(false);
-      } else {
-        await setDoc(ref, { savedAt: new Date() });
-        setBookmark(true);
-      }
-    } catch (err) {
-      console.error("Bookmark error:", err);
+ const toggleBookmark = async () => {
+  if (!user) return alert("Login to bookmark.");
+  const ref = doc(db, "users", user.uid, "bookmarks", id);
+  try {
+    if (bookmark) {
+      await deleteDoc(ref);   // <- now recognized
+      setBookmark(false);
+    } else {
+      await setDoc(ref, { savedAt: new Date() });  // <- now recognized
+      setBookmark(true);
     }
-  };
+  } catch (err) {
+    console.error("Bookmark error:", err);
+  }
+};
+
 
   if (loading || !story) {
     return <div className="text-white text-center py-10">Loading story...</div>;
