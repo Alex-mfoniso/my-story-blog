@@ -17,7 +17,8 @@ const Register = () => {
     setError("");
     try {
       await register(email, password, username); // pass username
-      navigate("/");
+      alert("Account created! Please verify your email before posting.");
+      navigate("/login");
     } catch (err) {
       setError("Failed to create account. " + err.message);
       console.error(err);
@@ -30,7 +31,9 @@ const Register = () => {
         onSubmit={handleRegister}
         className=" bg-[#1f1f38]/80 backdrop-blur-sm p-6 rounded-xl shadow-inner border border-[#2a2a45] w-full max-w-md space-y-4"
       >
-        <h2 className="text-2xl font-bold text-center text-[#c30F45]">Register</h2>
+        <h2 className="text-2xl font-bold text-center text-[#c30F45]">
+          Register
+        </h2>
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
         <input

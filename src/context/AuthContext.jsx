@@ -80,6 +80,7 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendEmailVerification,
   updateProfile,
   signOut,
 } from "firebase/auth";
@@ -103,6 +104,7 @@ const register = async (email, password, username) => {
   await updateProfile(res.user, {
     displayName: username,
   });
+  await sendEmailVerification(res.user);
 };
   const login = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);

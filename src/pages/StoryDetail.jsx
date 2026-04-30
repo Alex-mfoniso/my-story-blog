@@ -6,6 +6,18 @@ import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "../context/AuthContext";
 import LikesAndComments from "../components/LikesAndComments";
 
+import { Helmet } from "react-helmet";
+
+<Helmet>
+  <title>{story.title} - Your Blog</title>
+  <meta name="description" content={story.content.slice(0, 150)} />
+  <meta name="keywords" content="stories, writing, fiction, blog" />
+  <meta property="og:title" content={story.title} />
+  <meta property="og:description" content={story.content.slice(0, 150)} />
+  <meta property="og:image" content={story.image || defaultImg} />
+</Helmet>
+
+
  
 
 const WORDS_PER_PAGE = 250;
