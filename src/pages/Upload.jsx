@@ -201,7 +201,7 @@
 // src/pages/Upload.jsx
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { auth, db } from "../firebase/fireabase";
+import { db } from "../firebase/fireabase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -215,7 +215,6 @@ const DEFAULT_IMAGE = "https://via.placeholder.com/600x400?text=No+Image";
 const Upload = () => {
   const { user } = useAuth();
   const [authChecked, setAuthChecked] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
   const [title, setTitle] = useState("");
   const [genre, setGenre] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -229,25 +228,6 @@ const Upload = () => {
 
   useEffect(() => {
     if (user !== undefined) setAuthChecked(true);
-  }, [user]);
-
-  useEffect(() => {
-    const refreshVerification = async () => {
-      if (!user) {
-        setIsVerified(false);
-        return;
-      }
-
-      try {
-        await auth.currentUser?.reload();
-        setIsVerified(auth.currentUser?.emailVerified ?? user.emailVerified);
-      } catch (error) {
-        console.error("Failed to refresh user verification:", error);
-        setIsVerified(user.emailVerified);
-      }
-    };
-
-    refreshVerification();
   }, [user]);
 
   const handleImageUpload = async (e) => {
@@ -306,13 +286,6 @@ const Upload = () => {
 
   if (!authChecked) return <div className="min-h-screen flex justify-center items-center bg-[#231123] text-white">Checking permissions...</div>;
   if (!user) return <div className="min-h-screen flex justify-center items-center bg-[#231123] text-white">Please log in to access this page.</div>;
-  if (!isVerified) {
-    return (
-      <div className="min-h-screen flex justify-center items-center bg-[#231123] text-white px-6 text-center">
-        <p>Please verify your email before posting stories.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen px-4 py-24 bg-[#231123] text-white">

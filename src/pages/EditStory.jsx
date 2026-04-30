@@ -187,13 +187,13 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import axios from "axios";
 
-const ADMIN_UID = "hzPSPeMCTvOy6aPVDS5UgnWDJTZ2";
-
 const EditStory = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [authChecked, setAuthChecked] = useState(false);
+  const [storyChecked, setStoryChecked] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
   const [title, setTitle] = useState("");
   const [genre, setGenre] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -216,6 +216,9 @@ const EditStory = () => {
         const snap = await getDoc(docRef);
         if (snap.exists()) {
           const data = snap.data();
+          const isOwner = data.author?.uid === user?.uid;
+          setCanEdit(isOwner);
+          if (!isOwner) return;
           setTitle(data.title);
           setGenre(data.genre);
           setImageUrl(data.image || "");
@@ -223,10 +226,12 @@ const EditStory = () => {
         }
       } catch (error) {
         console.error("Error loading story:", error);
+      } finally {
+        setStoryChecked(true);
       }
     };
-    if (editor) loadStory();
-  }, [editor, id]);
+    if (editor && user) loadStory();
+  }, [editor, id, user]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -247,6 +252,10 @@ const EditStory = () => {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (!canEdit) {
+      alert("You can only edit your own story.");
+      return;
+    }
     setLoading(true);
     setSuccessMsg("");
 
@@ -274,7 +283,8 @@ const EditStory = () => {
 
   if (!authChecked) return <div className="text-white p-10">Checking...</div>;
   if (!user) return <div className="text-white p-10">Please log in.</div>;
-  if (user.uid !== ADMIN_UID) return <div className="text-white p-10">Access Denied</div>;
+  if (!storyChecked) return <div className="text-white p-10">Loading story...</div>;
+  if (!canEdit) return <div className="text-white p-10">Access Denied: You can only edit your own story.</div>;
 
   return (
     <div className="min-h-screen px-4 py-24 bg-[#231123] text-white">

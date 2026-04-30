@@ -1,17 +1,28 @@
 // src/pages/ManageStories.jsx
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase/fireabase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
+import { useAuth } from "../context/AuthContext";
 
 const ManageStories = () => {
+  const { user } = useAuth();
   const [stories, setStories] = useState([]);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     const fetchStories = async () => {
-      const snapshot = await getDocs(collection(db, "stories"));
+      if (!user) {
+        setStories([]);
+        return;
+      }
+
+      const storiesQuery = query(
+        collection(db, "stories"),
+        where("author.uid", "==", user.uid)
+      );
+      const snapshot = await getDocs(storiesQuery);
       const allStories = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -20,7 +31,7 @@ const ManageStories = () => {
     };
 
     fetchStories();
-  }, []);
+  }, [user]);
 
   const filtered = stories.filter((s) =>
     s.title?.toLowerCase().includes(search.toLowerCase())
@@ -31,6 +42,12 @@ const ManageStories = () => {
       <h2 className="text-3xl font-bold text-center text-[#c30F45] mb-6">
         Manage Stories
       </h2>
+
+      {!user && (
+        <p className="text-gray-300 text-center mb-6">
+          Please log in to manage your stories.
+        </p>
+      )}
 
       <input
         type="text"

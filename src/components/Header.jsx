@@ -145,6 +145,7 @@ const Header = () => {
         <Link to="/stories" className="hover:text-[#c30F45]">Stories</Link>
         {user ? (
           <>
+            <Link to="/upload" className="hover:text-[#c30F45]">Post Story</Link>
             <Link to="/bookmarks" className="hover:text-[#c30F45]">My Bookmarks</Link>
             <Link to="/profile" className="hover:text-[#c30F45]">Profile</Link>
           </>
@@ -171,6 +172,7 @@ const Header = () => {
             <Link to="/stories" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">Stories</Link>
             {user ? (
               <>
+                <Link to="/upload" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">Post Story</Link>
                 <Link to="/bookmarks" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">My Bookmarks</Link>
                 <Link to="/profile" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">Profile</Link>
               </>
