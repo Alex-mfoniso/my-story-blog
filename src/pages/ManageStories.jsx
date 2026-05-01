@@ -21,16 +21,29 @@ const ManageStories = () => {
         return;
       }
 
-      const storiesQuery = query(
+      const storiesByNestedAuthorQuery = query(
         collection(db, "stories"),
         where("author.uid", "==", user.uid)
       );
-      const snapshot = await getDocs(storiesQuery);
-      const allStories = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setStories(allStories);
+      const storiesByAuthorIdQuery = query(
+        collection(db, "stories"),
+        where("authorId", "==", user.uid)
+      );
+
+      const [nestedAuthorSnapshot, authorIdSnapshot] = await Promise.all([
+        getDocs(storiesByNestedAuthorQuery),
+        getDocs(storiesByAuthorIdQuery),
+      ]);
+
+      const mergedStories = new Map();
+      [...nestedAuthorSnapshot.docs, ...authorIdSnapshot.docs].forEach((docSnap) => {
+        mergedStories.set(docSnap.id, {
+          id: docSnap.id,
+          ...docSnap.data(),
+        });
+      });
+
+      setStories(Array.from(mergedStories.values()));
     };
 
     fetchStories();

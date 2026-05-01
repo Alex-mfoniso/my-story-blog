@@ -264,6 +264,7 @@ const Upload = () => {
         content,
         excerpt,
         createdAt: serverTimestamp(),
+        authorId: user.uid,
         author: {
           uid: user.uid,
           name: user.displayName,

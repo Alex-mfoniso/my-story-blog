@@ -219,7 +219,8 @@ const EditStory = () => {
         const snap = await getDoc(docRef);
         if (snap.exists()) {
           const data = snap.data();
-          const isOwner = data.author?.uid === user?.uid;
+          const isOwner =
+            data.author?.uid === user?.uid || data.authorId === user?.uid;
           const createdSeconds = data.createdAt?.seconds;
           const withinWindow = createdSeconds
             ? Date.now() - createdSeconds * 1000 <= EDIT_WINDOW_MINUTES * 60 * 1000
