@@ -49,6 +49,7 @@ import MyBookmarks from "../pages/MyBookmarks";
 import Register from "../pages/Register";
 import ManageStories from "../pages/ManageStories";
 import EditStory from "../pages/EditStory";
+import AdminPage from "../pages/AdminPage";
 // import LoginForm from "../components/LoginFo";
 // import other pages as you create them (e.g. Stories, Upload, Login)
 
@@ -67,7 +68,8 @@ const AppRouter = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/manage-stories" element={<ManageStories />} />
-<Route path="/edit/:id" element={<EditStory />} />
+        <Route path="/edit/:id" element={<EditStory />} />
+        <Route path="/admin" element={<AdminPage />} />
         {/* Add more routes here as you build */}
       </Routes>
       {/* </Router> */}

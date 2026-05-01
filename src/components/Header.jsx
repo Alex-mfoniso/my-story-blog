@@ -78,6 +78,8 @@ import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 
+const ADMIN_UID = "jUVRPKVD9VWGk0guVbDT68FTgxj1";
+
 const Header = () => {
   const [open, setOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
@@ -85,6 +87,7 @@ const Header = () => {
   });
 
   const { user } = useAuth();
+  const isAdmin = user?.uid === ADMIN_UID;
 
   useEffect(() => {
     const root = document.documentElement;
@@ -146,6 +149,7 @@ const Header = () => {
         {user ? (
           <>
             <Link to="/upload" className="hover:text-[#c30F45]">Post Story</Link>
+            {isAdmin && <Link to="/admin" className="hover:text-[#c30F45]">Admin</Link>}
             <Link to="/bookmarks" className="hover:text-[#c30F45]">My Bookmarks</Link>
             <Link to="/profile" className="hover:text-[#c30F45]">Profile</Link>
           </>
@@ -173,6 +177,9 @@ const Header = () => {
             {user ? (
               <>
                 <Link to="/upload" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">Post Story</Link>
+                {isAdmin && (
+                  <Link to="/admin" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">Admin</Link>
+                )}
                 <Link to="/bookmarks" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">My Bookmarks</Link>
                 <Link to="/profile" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">Profile</Link>
               </>
