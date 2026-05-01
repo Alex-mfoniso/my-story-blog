@@ -1,15 +1,18 @@
 // src/pages/ManageStories.jsx
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase/fireabase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, query, where } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "../context/AuthContext";
+
+const EDIT_WINDOW_MINUTES = 15;
 
 const ManageStories = () => {
   const { user } = useAuth();
   const [stories, setStories] = useState([]);
   const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     const fetchStories = async () => {
@@ -36,6 +39,29 @@ const ManageStories = () => {
   const filtered = stories.filter((s) =>
     s.title?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const canEditStory = (story) => {
+    const createdSeconds = story.createdAt?.seconds;
+    if (!createdSeconds) return false;
+    const createdMs = createdSeconds * 1000;
+    return Date.now() - createdMs <= EDIT_WINDOW_MINUTES * 60 * 1000;
+  };
+
+  const handleDelete = async (storyId) => {
+    const confirmed = window.confirm("Delete this story permanently?");
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(storyId);
+      await deleteDoc(doc(db, "stories", storyId));
+      setStories((prev) => prev.filter((story) => story.id !== storyId));
+    } catch (error) {
+      console.error("Delete story error:", error);
+      alert("❌ Failed to delete story.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#231123] text-white px-4 py-24">
@@ -76,12 +102,27 @@ const ManageStories = () => {
                     addSuffix: true,
                   })}
               </p>
-              <Link
-                to={`/edit/${story.id}`}
-                className="inline-block mt-2 px-4 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-              >
-                ✏️ Edit Story
-              </Link>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {canEditStory(story) ? (
+                  <Link
+                    to={`/edit/${story.id}`}
+                    className="inline-block px-4 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                  >
+                    ✏️ Edit Story
+                  </Link>
+                ) : (
+                  <span className="inline-block px-4 py-1 bg-gray-600 text-gray-200 rounded cursor-not-allowed">
+                    Edit closed after 15 mins
+                  </span>
+                )}
+                <button
+                  onClick={() => handleDelete(story.id)}
+                  disabled={deletingId === story.id}
+                  className="inline-block px-4 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-60"
+                >
+                  {deletingId === story.id ? "Deleting..." : "🗑 Delete"}
+                </button>
+              </div>
             </div>
           ))}
         </div>

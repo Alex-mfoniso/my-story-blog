@@ -187,6 +187,8 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import axios from "axios";
 
+const EDIT_WINDOW_MINUTES = 15;
+
 const EditStory = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -194,6 +196,7 @@ const EditStory = () => {
   const [authChecked, setAuthChecked] = useState(false);
   const [storyChecked, setStoryChecked] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
+  const [denyMessage, setDenyMessage] = useState("");
   const [title, setTitle] = useState("");
   const [genre, setGenre] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -217,15 +220,36 @@ const EditStory = () => {
         if (snap.exists()) {
           const data = snap.data();
           const isOwner = data.author?.uid === user?.uid;
-          setCanEdit(isOwner);
-          if (!isOwner) return;
+          const createdSeconds = data.createdAt?.seconds;
+          const withinWindow = createdSeconds
+            ? Date.now() - createdSeconds * 1000 <= EDIT_WINDOW_MINUTES * 60 * 1000
+            : false;
+
+          if (!isOwner) {
+            setCanEdit(false);
+            setDenyMessage("Access Denied: You can only edit your own story.");
+            return;
+          }
+
+          if (!withinWindow) {
+            setCanEdit(false);
+            setDenyMessage("Editing window closed. You can only edit within 15 minutes of posting.");
+            return;
+          }
+
+          setCanEdit(true);
           setTitle(data.title);
           setGenre(data.genre);
           setImageUrl(data.image || "");
           if (editor) editor.commands.setContent(data.content);
+        } else {
+          setCanEdit(false);
+          setDenyMessage("Story not found.");
         }
       } catch (error) {
         console.error("Error loading story:", error);
+        setCanEdit(false);
+        setDenyMessage("Failed to load story.");
       } finally {
         setStoryChecked(true);
       }
@@ -284,7 +308,7 @@ const EditStory = () => {
   if (!authChecked) return <div className="text-white p-10">Checking...</div>;
   if (!user) return <div className="text-white p-10">Please log in.</div>;
   if (!storyChecked) return <div className="text-white p-10">Loading story...</div>;
-  if (!canEdit) return <div className="text-white p-10">Access Denied: You can only edit your own story.</div>;
+  if (!canEdit) return <div className="text-white p-10">{denyMessage || "Access denied."}</div>;
 
   return (
     <div className="min-h-screen px-4 py-24 bg-[#231123] text-white">
