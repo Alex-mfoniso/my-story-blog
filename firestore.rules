@@ -5,6 +5,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return isSignedIn() && request.auth.uid == "jUVRPKVD9VWGk0guVbDT68FTgxj1";
+    }
+
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+
     function isOwner(uid) {
       return isSignedIn() && request.auth.uid == uid;
     }
@@ -36,7 +44,11 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow read: if true;
         allow create: if isSignedIn();
-        allow update, delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+        allow update: if isSignedIn() && (
+          (request.auth.uid == resource.data.author.uid && isWithinEditWindow()) ||
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'replies']))
+        );
+        allow delete: if isSignedIn() && request.auth.uid == resource.data.author.uid;
       }
 
       match /likes/{likeId} {
@@ -52,6 +64,21 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
       allow write: if isOwner(userId);
+      
+      match /followers/{followerId} {
+        allow read: if true;
+        allow write: if isSignedIn() && request.auth.uid == followerId;
+      }
+      
+      match /following/{followingId} {
+        allow read: if true;
+        allow write: if isOwner(userId);
+      }
+      
+      match /notifications/{notificationId} {
+        allow read, update, delete: if isOwner(userId);
+        allow create: if isSignedIn();
+      }
     }
   }
 }

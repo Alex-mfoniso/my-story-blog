@@ -84,7 +84,8 @@ import {
   updateProfile,
   signOut,
 } from "firebase/auth";
-import { auth } from "../firebase/fireabase"; // ✅ make sure this path is correct
+import { auth, db } from "../firebase/fireabase"; 
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const AuthContext = createContext();
 
@@ -93,19 +94,63 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Sync user to Firestore if document doesn't exist
+        try {
+          const userRef = doc(db, "users", firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (!userSnap.exists()) {
+            await setDoc(userRef, {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName || "User",
+              photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${firebaseUser.displayName || 'User'}`,
+              createdAt: serverTimestamp(),
+              lastLogin: serverTimestamp(),
+              isDisabled: false,
+            });
+          } else {
+            const userData = userSnap.data();
+            if (userData.isDisabled) {
+              await signOut(auth);
+              alert("Your account has been disabled by an administrator.");
+              setUser(null);
+              setLoading(false);
+              return;
+            }
+            // Update last login
+            await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
+          }
+        } catch (error) {
+          console.error("Error syncing user to Firestore:", error);
+        }
+      }
       setUser(firebaseUser);
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
-const register = async (email, password, username) => {
-  const res = await createUserWithEmailAndPassword(auth, email, password);
-  await updateProfile(res.user, {
-    displayName: username,
-  });
-  await sendEmailVerification(res.user);
-};
+  const register = async (email, password, username) => {
+    const res = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(res.user, {
+      displayName: username,
+    });
+
+    // Create Firestore document immediately
+    const userRef = doc(db, "users", res.user.uid);
+    await setDoc(userRef, {
+      uid: res.user.uid,
+      email: res.user.email,
+      displayName: username,
+      photoURL: `https://ui-avatars.com/api/?name=${username}`,
+      createdAt: serverTimestamp(),
+      lastLogin: serverTimestamp(),
+    });
+
+    await sendEmailVerification(res.user);
+  };
   const login = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);
 

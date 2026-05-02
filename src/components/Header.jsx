@@ -78,16 +78,29 @@ import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase/fireabase";
+
 const ADMIN_UID = "jUVRPKVD9VWGk0guVbDT68FTgxj1";
 
 const Header = () => {
   const [open, setOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("theme") === "dark";
   });
 
   const { user } = useAuth();
   const isAdmin = user?.uid === ADMIN_UID;
+
+  useEffect(() => {
+    if (!user) return;
+    const q = query(collection(db, "users", user.uid, "notifications"), where("read", "==", false));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setUnreadCount(snap.size);
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -143,7 +156,7 @@ const Header = () => {
       </button>
 
       {/* Desktop Nav */}
-      <nav className="hidden md:flex space-x-6 text-sm font-medium">
+      <nav className="hidden md:flex space-x-6 text-sm font-medium items-center">
         <Link to="/" className="hover:text-[#c30F45]">Home</Link>
         <Link to="/stories" className="hover:text-[#c30F45]">Stories</Link>
         {user ? (
@@ -152,6 +165,14 @@ const Header = () => {
             {isAdmin && <Link to="/admin" className="hover:text-[#c30F45]">Admin</Link>}
             <Link to="/bookmarks" className="hover:text-[#c30F45]">My Bookmarks</Link>
             <Link to="/profile" className="hover:text-[#c30F45]">Profile</Link>
+            <Link to="/notifications" className="relative hover:text-[#c30F45] flex items-center">
+              🔔
+              {unreadCount > 0 && (
+                <span className="absolute -top-2 -right-3 bg-[#c30F45] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
           </>
         ) : (
           <>

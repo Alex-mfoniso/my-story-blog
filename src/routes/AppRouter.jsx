@@ -50,6 +50,8 @@ import Register from "../pages/Register";
 import ManageStories from "../pages/ManageStories";
 import EditStory from "../pages/EditStory";
 import AdminPage from "../pages/AdminPage";
+import AuthorProfile from "../pages/AuthorProfile";
+import Notifications from "../pages/Notifications";
 // import LoginForm from "../components/LoginFo";
 // import other pages as you create them (e.g. Stories, Upload, Login)
 
@@ -61,6 +63,7 @@ const AppRouter = () => {
         <Route path="/" element={<Home />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/story/:id" element={<StoryDetail />} />
+        <Route path="/author/:id" element={<AuthorProfile />} />
         <Route path="/bookmarks" element={<MyBookmarks />} />
         <Route path="/register" element={<Register />} />
         <Route path="/stories" element={<Stories />} />
@@ -70,6 +73,7 @@ const AppRouter = () => {
         <Route path="/manage-stories" element={<ManageStories />} />
         <Route path="/edit/:id" element={<EditStory />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/notifications" element={<Notifications />} />
         {/* Add more routes here as you build */}
       </Routes>
       {/* </Router> */}

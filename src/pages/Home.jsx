@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import Header from "../components/Header";
 import { Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase/fireabase";
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, query, orderBy, limit, getDocs, where } from "firebase/firestore";
 import { formatDistanceToNow } from "date-fns";
 
 const Home = () => {
@@ -18,12 +18,15 @@ const Home = () => {
         const q = query(
           collection(db, "stories"),
           orderBy("createdAt", "desc"),
-          limit(5)
+          limit(20)
         );
         const snapshot = await getDocs(q);
 
+        // Client-side filtering to avoid composite index requirement
+        const publishedDocs = snapshot.docs.filter(doc => doc.data().isDraft !== true).slice(0, 5);
+
         const storiesWithCounts = await Promise.all(
-          snapshot.docs.map(async (docSnap) => {
+          publishedDocs.map(async (docSnap) => {
             const storyData = { id: docSnap.id, ...docSnap.data() };
 
             const likesSnap = await getDocs(

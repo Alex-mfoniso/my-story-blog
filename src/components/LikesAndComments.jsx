@@ -17,7 +17,7 @@ import { useAuth } from "../context/AuthContext";
 import { formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
 
-const LikesAndComments = ({ storyId }) => {
+const LikesAndComments = ({ storyId, authorId, storyTitle }) => {
   const [likeLoading, setLikeLoading] = useState(false);
   const { user } = useAuth();
   const [likesCount, setLikesCount] = useState(0);
@@ -70,6 +70,20 @@ const LikesAndComments = ({ storyId }) => {
       await setDoc(ref, { likedAt: serverTimestamp() });
       setLiked(true);
       setLikesCount((prev) => prev + 1);
+
+      // TRIGGER NOTIFICATION FOR LIKE
+      if (authorId && authorId !== user.uid) {
+        const notifRef = doc(collection(db, "users", authorId, "notifications"));
+        await setDoc(notifRef, {
+          type: "like",
+          fromUserId: user.uid,
+          fromUserName: user.displayName || user.email,
+          storyId,
+          storyTitle,
+          read: false,
+          createdAt: new Date()
+        });
+      }
     }
 
     setLikeLoading(false);
@@ -107,6 +121,20 @@ const LikesAndComments = ({ storyId }) => {
     };
     setComments([newCommentObj, ...comments]);
     setNewComment("");
+
+    // TRIGGER NOTIFICATION FOR COMMENT
+    if (authorId && authorId !== user.uid) {
+      const notifRef = doc(collection(db, "users", authorId, "notifications"));
+      await setDoc(notifRef, {
+        type: "comment",
+        fromUserId: user.uid,
+        fromUserName: user.displayName || user.email,
+        storyId,
+        storyTitle,
+        read: false,
+        createdAt: new Date()
+      });
+    }
   };
 
   const toggleCommentLike = async (commentId) => {
@@ -182,6 +210,21 @@ const LikesAndComments = ({ storyId }) => {
           : comment
       )
     );
+
+    // TRIGGER NOTIFICATION FOR REPLY
+    // Notify the author of the comment being replied to
+    if (commentData.author?.uid && commentData.author.uid !== user.uid) {
+      const notifRef = doc(collection(db, "users", commentData.author.uid, "notifications"));
+      await setDoc(notifRef, {
+        type: "reply",
+        fromUserId: user.uid,
+        fromUserName: user.displayName || user.email,
+        storyId,
+        storyTitle,
+        read: false,
+        createdAt: new Date()
+      });
+    }
   };
 
   const saveEditedReply = async (commentId, replyId, newText) => {
