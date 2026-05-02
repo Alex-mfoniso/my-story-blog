@@ -83,9 +83,13 @@ import {
   sendEmailVerification,
   updateProfile,
   signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import { auth, db } from "../firebase/fireabase"; 
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+
+const googleProvider = new GoogleAuthProvider();
 
 const AuthContext = createContext();
 
@@ -102,11 +106,13 @@ export const AuthProvider = ({ children }) => {
           const userSnap = await getDoc(userRef);
 
           if (!userSnap.exists()) {
+            const name = firebaseUser.displayName || "User";
             await setDoc(userRef, {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
-              displayName: firebaseUser.displayName || "User",
-              photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${firebaseUser.displayName || 'User'}`,
+              displayName: name,
+              displayNameLower: name.toLowerCase(),
+              photoURL: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${name}`,
               createdAt: serverTimestamp(),
               lastLogin: serverTimestamp(),
               isDisabled: false,
@@ -144,6 +150,7 @@ export const AuthProvider = ({ children }) => {
       uid: res.user.uid,
       email: res.user.email,
       displayName: username,
+      displayNameLower: username.toLowerCase(),
       photoURL: `https://ui-avatars.com/api/?name=${username}`,
       createdAt: serverTimestamp(),
       lastLogin: serverTimestamp(),
@@ -154,11 +161,13 @@ export const AuthProvider = ({ children }) => {
   const login = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);
 
+  const loginWithGoogle = () => signInWithPopup(auth, googleProvider);
+
   const logout = () => signOut(auth);
 
   return (
     <AuthContext.Provider
-      value={{ user, login, logout, register, loading }} // ✅ include register here
+      value={{ user, login, logout, register, loginWithGoogle, loading }} // ✅ include register here
     >
       {!loading && children}
     </AuthContext.Provider>

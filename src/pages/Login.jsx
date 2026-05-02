@@ -60,9 +60,9 @@ const Login = () => {
           <Link to="/register" className="text-[#c30F45] underline">
             Register
           </Link>
-        </p>  
+        </p>
 
-        
+
       </form>
     </div>
   );

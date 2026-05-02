@@ -52,6 +52,7 @@ import EditStory from "../pages/EditStory";
 import AdminPage from "../pages/AdminPage";
 import AuthorProfile from "../pages/AuthorProfile";
 import Notifications from "../pages/Notifications";
+import SearchUsers from "../pages/SearchUsers";
 // import LoginForm from "../components/LoginFo";
 // import other pages as you create them (e.g. Stories, Upload, Login)
 
@@ -74,6 +75,7 @@ const AppRouter = () => {
         <Route path="/edit/:id" element={<EditStory />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/search-users" element={<SearchUsers />} />
         {/* Add more routes here as you build */}
       </Routes>
       {/* </Router> */}
