@@ -20,17 +20,16 @@
 
 
 import React from "react";
-import Header from "./components/Header";
 import AppRouter from "./routes/AppRouter";
 import { BrowserRouter } from "react-router-dom";
-// import { Analytics } from "@vercel/analytics/next"
+import MainLayout from "./components/MainLayout";
 
 const App = () => {
   return (
     <BrowserRouter>
-      <Header />
-      <AppRouter />
-      {/* <Analytics/> */}
+      <MainLayout>
+        <AppRouter />
+      </MainLayout>
     </BrowserRouter>
   );
 };

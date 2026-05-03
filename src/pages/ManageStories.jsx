@@ -1,7 +1,6 @@
-// src/pages/ManageStories.jsx
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase/fireabase";
-import { collection, deleteDoc, doc, getDocs, query, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDocs, query, where, onSnapshot } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "../context/AuthContext";
@@ -12,41 +11,18 @@ const ManageStories = () => {
   const { user } = useAuth();
   const [stories, setStories] = useState([]);
   const [search, setSearch] = useState("");
-  const [deletingId, setDeletingId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStories = async () => {
-      if (!user) {
-        setStories([]);
-        return;
-      }
+    if (!user) return;
 
-      const storiesByNestedAuthorQuery = query(
-        collection(db, "stories"),
-        where("author.uid", "==", user.uid)
-      );
-      const storiesByAuthorIdQuery = query(
-        collection(db, "stories"),
-        where("authorId", "==", user.uid)
-      );
+    const q = query(collection(db, "stories"), where("authorId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setStories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
 
-      const [nestedAuthorSnapshot, authorIdSnapshot] = await Promise.all([
-        getDocs(storiesByNestedAuthorQuery),
-        getDocs(storiesByAuthorIdQuery),
-      ]);
-
-      const mergedStories = new Map();
-      [...nestedAuthorSnapshot.docs, ...authorIdSnapshot.docs].forEach((docSnap) => {
-        mergedStories.set(docSnap.id, {
-          id: docSnap.id,
-          ...docSnap.data(),
-        });
-      });
-
-      setStories(Array.from(mergedStories.values()));
-    };
-
-    fetchStories();
+    return () => unsubscribe();
   }, [user]);
 
   const filtered = stories.filter((s) =>
@@ -61,85 +37,83 @@ const ManageStories = () => {
   };
 
   const handleDelete = async (storyId) => {
-    const confirmed = window.confirm("Delete this story permanently?");
-    if (!confirmed) return;
-
+    if (!window.confirm("Delete this story permanently?")) return;
     try {
-      setDeletingId(storyId);
       await deleteDoc(doc(db, "stories", storyId));
-      setStories((prev) => prev.filter((story) => story.id !== storyId));
     } catch (error) {
-      console.error("Delete story error:", error);
-      alert("❌ Failed to delete story.");
-    } finally {
-      setDeletingId(null);
+      console.error("Delete error:", error);
     }
   };
 
+  if (!user) return <div className="text-center py-20">Please log in.</div>;
+
   return (
-    <div className="min-h-screen bg-[#231123] text-white px-4 py-24">
-      <h2 className="text-3xl font-bold text-center text-[#c30F45] mb-6">
-        Manage Stories
-      </h2>
+    <div className="flex flex-col min-h-screen bg-black">
+      {/* Header */}
+      <header className="sticky top-0 z-30 bg-black/80 backdrop-blur-md border-b border-[#2f3336] px-4 py-3">
+        <h2 className="text-xl font-bold">Manage Stories</h2>
+        <p className="text-xs text-gray-500">{stories.length} stories found</p>
+      </header>
 
-      {!user && (
-        <p className="text-gray-300 text-center mb-6">
-          Please log in to manage your stories.
-        </p>
-      )}
+      {/* Search Bar */}
+      <div className="p-4 border-b border-[#2f3336]">
+        <div className="relative group">
+          <input
+            type="text"
+            placeholder="Search your stories..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-[#202327] border-transparent rounded-full py-2 px-10 text-sm text-white focus:outline-none focus:bg-black focus:border-[#c30F45] focus:ring-1 focus:ring-[#c30F45] w-full transition-all duration-200"
+          />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
+        </div>
+      </div>
 
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by title..."
-        className="w-full max-w-md p-2 rounded mb-6 mx-auto block text-black"
-      />
-
-      {filtered.length === 0 ? (
-        <p className="text-gray-300 text-center">No stories found.</p>
-      ) : (
-        <div className="grid gap-6 max-w-4xl mx-auto">
-          {filtered.map((story) => (
-            <div
-              key={story.id}
-              className="bg-[#2c1b2f] rounded p-4 shadow-md"
-            >
-              <h3 className="text-xl font-semibold text-[#c30F45] mb-1">
-                {story.title}
-              </h3>
-              <p className="text-gray-400 text-sm mb-2">{story.genre}</p>
-              <p className="text-sm text-gray-400 mb-2">
-                {story.createdAt?.seconds &&
-                  formatDistanceToNow(new Date(story.createdAt.seconds * 1000), {
-                    addSuffix: true,
-                  })}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-3">
-                {canEditStory(story) ? (
-                  <Link
-                    to={`/edit/${story.id}`}
-                    className="inline-block px-4 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+      {/* Stories List */}
+      <div className="pb-20 lg:pb-0">
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-8 h-8 border-2 border-[#c30F45] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 text-gray-500">No stories found.</div>
+        ) : (
+          filtered.map((story) => (
+            <div key={story.id} className="p-4 border-b border-[#2f3336] hover:bg-[#080808] transition duration-200">
+              <div className="flex justify-between items-start gap-4">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-white text-lg truncate mb-1">{story.title}</h3>
+                  <div className="flex gap-2 text-xs text-gray-500">
+                    <span className="text-[#c30F45] font-bold">{story.genre}</span>
+                    <span>·</span>
+                    <span>{story.createdAt?.seconds ? formatDistanceToNow(new Date(story.createdAt.seconds * 1000), { addSuffix: true }) : "just now"}</span>
+                  </div>
+                  {story.isDraft && <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded mt-2 inline-block">DRAFT</span>}
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  {canEditStory(story) ? (
+                    <Link
+                      to={`/edit/${story.id}`}
+                      className="bg-white text-black px-4 py-1.5 rounded-full text-xs font-bold hover:bg-gray-200 transition text-center"
+                    >
+                      Edit
+                    </Link>
+                  ) : (
+                    <span className="text-[10px] text-gray-600 font-bold text-right">Locked</span>
+                  )}
+                  <button
+                    onClick={() => handleDelete(story.id)}
+                    className="text-red-500 text-xs font-bold hover:underline"
                   >
-                    ✏️ Edit Story
-                  </Link>
-                ) : (
-                  <span className="inline-block px-4 py-1 bg-gray-600 text-gray-200 rounded cursor-not-allowed">
-                    Edit closed after 15 mins
-                  </span>
-                )}
-                <button
-                  onClick={() => handleDelete(story.id)}
-                  disabled={deletingId === story.id}
-                  className="inline-block px-4 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-60"
-                >
-                  {deletingId === story.id ? "Deleting..." : "🗑 Delete"}
-                </button>
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 };

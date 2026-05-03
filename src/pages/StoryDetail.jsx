@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase/fireabase";
 import { formatDistanceToNow } from "date-fns";
@@ -7,7 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import LikesAndComments from "../components/LikesAndComments";
 import { Helmet } from "react-helmet";
 
-const WORDS_PER_PAGE = 250;
+const WORDS_PER_PAGE = 300;
 const FONT_SIZES = ["text-sm", "text-base", "text-lg", "text-xl", "text-2xl"];
 
 const StoryDetail = () => {
@@ -18,7 +18,7 @@ const StoryDetail = () => {
   const [loading, setLoading] = useState(true);
   const [bookmark, setBookmark] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [fontSizeIndex, setFontSizeIndex] = useState(1); // Default to "text-base"
+  const [fontSizeIndex, setFontSizeIndex] = useState(1);
 
   useEffect(() => {
     const fetchStory = async () => {
@@ -64,10 +64,14 @@ const StoryDetail = () => {
   const decreaseFontSize = () => setFontSizeIndex(prev => Math.max(prev - 1, 0));
 
   if (loading || !story) {
-    return <div className="text-white text-center py-10">Loading story...</div>;
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="w-8 h-8 border-2 border-[#c30F45] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  const words = story.content.split(" ");
+  const words = story.content?.split(" ") || [];
   const totalPages = Math.max(1, Math.ceil(words.length / WORDS_PER_PAGE));
   const pageWords = words.slice((currentPage - 1) * WORDS_PER_PAGE, currentPage * WORDS_PER_PAGE);
   const pageContent = pageWords.join(" ");
@@ -75,72 +79,78 @@ const StoryDetail = () => {
   const progressPercentage = (currentPage / totalPages) * 100;
 
   return (
-    <div className="min-h-screen px-4 py-24 bg-gradient-to-br from-[#0f0f1c] via-[#1a1a2e] to-[#1f1f38] text-white">
+    <div className="flex flex-col min-h-screen bg-black">
       <Helmet>
-        <title>{story.title} | My Story Blog</title>
-        <meta name="description" content={story.excerpt || "Read this amazing story on My Story Blog."} />
-        <meta property="og:title" content={story.title} />
-        <meta property="og:description" content={story.excerpt || "Read this amazing story on My Story Blog."} />
-        {story.image && <meta property="og:image" content={story.image} />}
+        <title>{story.title} | Alex's Stories</title>
       </Helmet>
 
-      {/* Progress Bar (Sticky Top) */}
-      <div className="fixed top-0 left-0 w-full h-1 bg-[#2a2a45] z-50">
-        <div className="h-full bg-[#c30F45] transition-all duration-300 ease-out" style={{ width: `${progressPercentage}%` }}></div>
+      {/* Sticky Progress Bar */}
+      <div className="fixed top-0 lg:top-0 left-0 w-full lg:w-full h-1 bg-gray-900 z-50">
+        <div 
+          className="h-full bg-[#c30F45] transition-all duration-300 ease-out" 
+          style={{ width: `${progressPercentage}%` }}
+        />
       </div>
 
-      <div className="max-w-3xl mx-auto bg-[#1f1f38]/80 backdrop-blur-sm border border-[#3a2e4e] p-6 rounded-xl shadow-lg relative">
-        
-        {/* Accessibility Controls */}
-        <div className="absolute -top-12 right-0 flex gap-2 bg-[#2c1b2f] p-1 rounded-t-lg border-x border-t border-[#3a2e4e]">
-          <button onClick={decreaseFontSize} title="Decrease Text Size" className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-gray-700 rounded text-sm">A-</button>
-          <button onClick={increaseFontSize} title="Increase Text Size" className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-gray-700 rounded text-lg">A+</button>
+      {/* Header with Back Button */}
+      <header className="sticky top-0 z-30 bg-black/80 backdrop-blur-md border-b border-[#2f3336] px-4 py-3 flex items-center gap-6">
+        <Link to="/" className="hover:bg-[#181818] p-2 rounded-full transition">
+          <span className="text-xl">←</span>
+        </Link>
+        <div>
+          <h2 className="text-lg font-bold leading-tight truncate w-64">{story.title}</h2>
+          <p className="text-xs text-gray-500">{totalPages} {totalPages === 1 ? 'page' : 'pages'}</p>
         </div>
+      </header>
 
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-4xl font-bold text-[#c30F45]">{story.title}</h1>
-          <button onClick={toggleBookmark} className="text-2xl hover:scale-110 transition-transform" title="Bookmark">
+      <article className="px-4 py-6">
+        {story.image && (
+          <img src={story.image} alt="cover" className="rounded-2xl w-full max-h-[400px] object-cover mb-6 border border-[#2f3336]" />
+        )}
+
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-3xl font-extrabold mb-1">{story.title}</h1>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Link to={`/author/${story.authorId || story.author?.uid}`} className="font-bold text-white hover:underline">
+                {story.author?.name || "Anonymous"}
+              </Link>
+              <span>·</span>
+              <span>{story.genre}</span>
+              <span>·</span>
+              <span>{story.createdAt?.seconds ? formatDistanceToNow(new Date(story.createdAt.seconds * 1000), { addSuffix: true }) : ""}</span>
+            </div>
+          </div>
+          <button onClick={toggleBookmark} className="text-2xl hover:scale-110 transition p-2">
             {bookmark ? "🔖" : "📑"}
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400 mb-6 border-b border-[#3a2e4e] pb-4">
-          <span className="bg-[#2c1b2f] px-2 py-1 rounded text-gray-300">{story.genre}</span>
-          <span>•</span>
-          <span>by <span className="font-semibold text-white">{story.author?.name || "Anonymous"}</span></span>
-          <span>•</span>
-          <span>{formatDistanceToNow(new Date(story.createdAt?.seconds * 1000), { addSuffix: true })}</span>
-          {story.readingTime && (
-            <>
-              <span>•</span>
-              <span className="flex items-center gap-1 text-yellow-500">⏱️ {story.readingTime} min read</span>
-            </>
-          )}
+        {/* Accessibility Controls */}
+        <div className="flex gap-2 mb-6 bg-[#16181c] p-1 rounded-lg w-fit border border-[#2f3336]">
+          <button onClick={decreaseFontSize} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white transition">A-</button>
+          <button onClick={increaseFontSize} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white transition text-lg">A+</button>
         </div>
-
-        {story.image && (
-          <img src={story.image} alt="cover" className="rounded-lg w-full max-h-[400px] object-cover mb-8 shadow-md" />
-        )}
 
         <div
           className={`prose prose-invert max-w-none text-gray-200 leading-relaxed mb-10 transition-all duration-300 ${FONT_SIZES[fontSizeIndex]}`}
           dangerouslySetInnerHTML={{ __html: pageContent }}
         />
 
-        {/* Pagination Controls */}
+        {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-between items-center mb-10 bg-[#2c1b2f] p-3 rounded-lg border border-[#3a2e4e]">
+          <div className="flex justify-between items-center mb-10 bg-[#16181c] p-3 rounded-xl border border-[#2f3336]">
             <button
               disabled={currentPage === 1}
               onClick={() => {
                 setCurrentPage((p) => p - 1);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="bg-gray-700 hover:bg-gray-600 px-5 py-2 rounded font-medium disabled:opacity-30 transition"
+              className="px-4 py-2 bg-gray-800 rounded-full font-bold disabled:opacity-30 hover:bg-gray-700 transition"
             >
-              ← Previous
+              Previous
             </button>
-            <span className="text-gray-400 font-medium tracking-wide">
+            <span className="text-gray-500 text-sm">
               Page {currentPage} of {totalPages}
             </span>
             <button
@@ -149,15 +159,17 @@ const StoryDetail = () => {
                 setCurrentPage((p) => p + 1);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="bg-gray-700 hover:bg-gray-600 px-5 py-2 rounded font-medium disabled:opacity-30 transition"
+              className="px-4 py-2 bg-gray-800 rounded-full font-bold disabled:opacity-30 hover:bg-gray-700 transition"
             >
-              Next →
+              Next
             </button>
           </div>
         )}
 
-        <LikesAndComments storyId={id} authorId={story.authorId || story.author?.uid} storyTitle={story.title} />
-      </div>
+        <div className="border-t border-[#2f3336] pt-6">
+          <LikesAndComments storyId={id} authorId={story.authorId || story.author?.uid} storyTitle={story.title} />
+        </div>
+      </article>
     </div>
   );
 };

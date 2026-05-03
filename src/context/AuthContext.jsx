@@ -76,7 +76,6 @@ import {
   useState,
 } from "react";
 import {
-  getAuth,
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,

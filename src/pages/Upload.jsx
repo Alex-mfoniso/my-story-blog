@@ -5,33 +5,32 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dnartpsxj/image/upload";
 const CLOUDINARY_PRESET = "MY_blog";
-const DEFAULT_IMAGE = "https://via.placeholder.com/600x400?text=No+Image";
 
 const Upload = () => {
   const { user } = useAuth();
-  const [authChecked, setAuthChecked] = useState(false);
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [genre, setGenre] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const editorLoaded = useRef(false);
 
   const editor = useEditor({
     extensions: [StarterKit],
-    content: "<p>Write your story...</p>",
+    content: "",
+    editorProps: {
+      attributes: {
+        class: 'focus:outline-none min-h-[300px] text-lg leading-relaxed',
+      },
+    },
   });
 
-  useEffect(() => {
-    if (user !== undefined) setAuthChecked(true);
-  }, [user]);
-
-  // Load draft from local storage on mount
+  // Load draft from local storage
   useEffect(() => {
     if (user && editor && !editorLoaded.current) {
       const savedDraft = localStorage.getItem(`draft_${user.uid}`);
@@ -50,56 +49,51 @@ const Upload = () => {
     }
   }, [user, editor]);
 
-  // Auto-save to local storage
+  // Auto-save
   useEffect(() => {
     if (!user || !editorLoaded.current) return;
     const timeoutId = setTimeout(() => {
       const content = editor?.getHTML() || "";
-      if (title || genre || imageUrl || content.length > 30) {
+      if (title || genre || imageUrl || content.length > 20) {
         setIsAutoSaving(true);
         localStorage.setItem(`draft_${user.uid}`, JSON.stringify({ title, genre, imageUrl, content }));
         setTimeout(() => setIsAutoSaving(false), 1000);
       }
-    }, 2000); // Save 2 seconds after last change
+    }, 2000);
     return () => clearTimeout(timeoutId);
   }, [title, genre, imageUrl, editor?.getHTML(), user]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", CLOUDINARY_PRESET);
-
     try {
+      setLoading(true);
       const res = await axios.post(CLOUDINARY_UPLOAD_URL, formData);
       setImageUrl(res.data.secure_url);
     } catch (error) {
       console.error("Image upload error:", error);
-      alert("❌ Failed to upload image.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpload = async (e, isDraft = false) => {
-    e.preventDefault();
+  const handlePublish = async (isDraft = false) => {
+    if (!title.trim() || !editor?.getText().trim()) return;
     setLoading(true);
-    setSuccessMsg("");
-
     try {
-      const content = editor?.getHTML() || "";
-      const finalImageUrl = imageUrl || DEFAULT_IMAGE;
-      const cleanText = content.replace(/<[^>]+>/g, "");
-      const excerpt = cleanText.slice(0, 150);
-      
-      // Calculate Reading Time (avg 200 words per minute)
-      const wordCount = cleanText.split(/\s+/).filter(word => word.length > 0).length;
+      const content = editor.getHTML();
+      const cleanText = editor.getText();
+      const excerpt = cleanText.slice(0, 160);
+      const wordCount = cleanText.split(/\s+/).filter(w => w.length > 0).length;
       const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
       await addDoc(collection(db, "stories"), {
         title,
-        genre,
-        image: finalImageUrl,
+        genre: genre || "General",
+        image: imageUrl || "",
         content,
         excerpt,
         readingTime,
@@ -108,80 +102,120 @@ const Upload = () => {
         authorId: user.uid,
         author: {
           uid: user.uid,
-          name: user.displayName,
-          email: user.email,
+          name: user.displayName || "Anonymous",
+          photoURL: user.photoURL || "",
         },
       });
 
-      // Clear draft on successful upload
       localStorage.removeItem(`draft_${user.uid}`);
-      
-      setTitle("");
-      setGenre("");
-      setImageUrl("");
-      if (editor) editor.commands.setContent("<p>Write your story...</p>");
-      setSuccessMsg(isDraft ? "✅ Draft saved to cloud!" : "✅ Story published successfully!");
+      navigate("/");
     } catch (error) {
-      console.error("Upload error:", error);
-      alert("❌ Failed to save story.");
+      console.error("Publish error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (!authChecked) return <div className="min-h-screen flex justify-center items-center bg-[#231123] text-white">Checking permissions...</div>;
-  if (!user) return <div className="min-h-screen flex justify-center items-center bg-[#231123] text-white">Please log in to access this page.</div>;
+  if (!user) return <div className="text-center py-20">Please log in.</div>;
 
   return (
-    <div className="min-h-screen px-4 py-24 bg-[#231123] text-white">
-      <div className="max-w-2xl mx-auto flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-[#c30F45]">Upload a New Story</h2>
-        {isAutoSaving && <span className="text-sm text-gray-400 italic animate-pulse">Saving draft...</span>}
-      </div>
-
-      <form className="max-w-2xl mx-auto bg-[#2c1b2f] p-6 rounded-lg shadow space-y-5">
-        <input type="text" placeholder="Story Title" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full p-3 rounded text-black border focus:ring-2 focus:ring-[#c30F45] outline-none" required />
-        <input type="text" placeholder="Genre (e.g. Sci-Fi, Romance)" value={genre} onChange={(e) => setGenre(e.target.value)} className="w-full p-3 rounded text-black border focus:ring-2 focus:ring-[#c30F45] outline-none" required />
-
-        <div>
-          <label className="block mb-1 font-semibold text-gray-300">Cover Image</label>
-          <input type="file" accept="image/*" onChange={handleImageUpload} className="text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#c30F45] file:text-white hover:file:bg-pink-600 cursor-pointer" />
-          {imageUrl && <img src={imageUrl} alt="Cover Preview" className="mt-4 w-full max-h-64 object-cover rounded shadow border border-[#3a2e4e]" />}
+    <div className="flex flex-col min-h-screen bg-black">
+      {/* Compose Header */}
+      <header className="sticky top-0 z-30 bg-black/80 backdrop-blur-md border-b border-[#2f3336] px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="p-2 rounded-full hover:bg-[#181818] transition">
+            <span className="text-xl">✕</span>
+          </Link>
+          <span className="font-bold hidden sm:inline">Compose Story</span>
+          {isAutoSaving && <span className="text-xs text-gray-500 animate-pulse">Draft saved</span>}
         </div>
-
-        <div className="bg-white rounded overflow-hidden text-black">
-          {editor && (
-            <>
-              <div className="flex flex-wrap gap-2 p-2 bg-gray-100 border-b border-gray-300">
-                <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={`px-2 py-1 rounded text-sm ${editor.isActive("bold") ? "bg-[#c30F45] text-white" : "bg-white hover:bg-gray-200 shadow-sm border"}`}>Bold</button>
-                <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={`px-2 py-1 rounded text-sm ${editor.isActive("italic") ? "bg-[#c30F45] text-white" : "bg-white hover:bg-gray-200 shadow-sm border"}`}>Italic</button>
-                <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={`px-2 py-1 rounded text-sm ${editor.isActive("bulletList") ? "bg-[#c30F45] text-white" : "bg-white hover:bg-gray-200 shadow-sm border"}`}>• List</button>
-                <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={`px-2 py-1 rounded text-sm ${editor.isActive("heading", { level: 2 }) ? "bg-[#c30F45] text-white" : "bg-white hover:bg-gray-200 shadow-sm border"}`}>H2</button>
-                <button type="button" onClick={() => editor.chain().focus().undo().run()} className="px-2 py-1 rounded text-sm bg-white hover:bg-gray-200 shadow-sm border ml-auto">Undo</button>
-                <button type="button" onClick={() => editor.chain().focus().redo().run()} className="px-2 py-1 rounded text-sm bg-white hover:bg-gray-200 shadow-sm border">Redo</button>
-              </div>
-              <div className="p-4 min-h-[300px]">
-                <EditorContent editor={editor} className="prose max-w-none focus:outline-none" />
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="flex gap-4 pt-4 border-t border-[#3a2e4e]">
-          <button type="button" onClick={(e) => handleUpload(e, true)} disabled={loading} className="w-1/3 py-3 bg-gray-700 hover:bg-gray-600 rounded font-semibold text-white transition">
-            Save as Draft
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => handlePublish(true)}
+            disabled={loading || !title}
+            className="text-white font-bold px-4 py-1.5 rounded-full hover:bg-[#181818] transition text-sm"
+          >
+            Save Draft
           </button>
-          <button type="submit" onClick={(e) => handleUpload(e, false)} disabled={loading} className="w-2/3 py-3 bg-[#c30F45] hover:opacity-90 rounded font-semibold text-white transition shadow-lg">
-            {loading ? "Publishing..." : "Publish Story"}
+          <button 
+            onClick={() => handlePublish(false)}
+            disabled={loading || !title || !editor?.getText().trim()}
+            className="bg-[#c30F45] text-white font-bold px-6 py-1.5 rounded-full hover:bg-[#a30d3a] transition text-sm disabled:opacity-50"
+          >
+            {loading ? "..." : "Post"}
           </button>
         </div>
+      </header>
 
-        {successMsg && <p className="text-green-400 text-center mt-4 font-medium">{successMsg}</p>}
-      </form>
+      {/* Editor Feed */}
+      <div className="px-4 py-6 max-w-[600px] mx-auto w-full">
+        <div className="flex gap-4">
+          <img 
+            src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`} 
+            className="w-12 h-12 rounded-full border border-[#2f3336] flex-shrink-0" 
+            alt="" 
+          />
+          <div className="flex-1 space-y-4">
+            <input 
+              type="text" 
+              placeholder="Story Title" 
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="bg-black text-2xl font-extrabold text-white placeholder-gray-600 focus:outline-none w-full"
+            />
+            
+            <input 
+              type="text" 
+              placeholder="Add genre..." 
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              className="bg-black text-sm text-[#c30F45] placeholder-gray-600 focus:outline-none w-full font-bold"
+            />
 
-      <div className="text-center mt-10 text-gray-400">
-        <p className="mb-2">Want to update existing stories?</p>
-        <Link to="/manage-stories" className="inline-block px-6 py-2 bg-[#2c1b2f] border border-[#3a2e4e] text-white rounded hover:bg-[#3a2e4e] transition">📂 Manage Stories</Link>
+            <div className="prose prose-invert max-w-none">
+              <EditorContent editor={editor} placeholder="What's your story?" />
+            </div>
+
+            {imageUrl && (
+              <div className="relative rounded-2xl overflow-hidden border border-[#2f3336]">
+                <img src={imageUrl} alt="Cover" className="w-full object-cover max-h-[400px]" />
+                <button 
+                  onClick={() => setImageUrl("")}
+                  className="absolute top-2 right-2 bg-black/60 p-2 rounded-full hover:bg-black transition"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Editor Toolbar (Footer) */}
+            <div className="sticky bottom-20 lg:bottom-4 bg-black border-t border-[#2f3336] pt-3 flex items-center justify-between">
+              <div className="flex gap-4">
+                <label className="cursor-pointer group">
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center group-hover:bg-blue-500/10 transition">
+                    <span className="text-blue-500 text-xl">🖼️</span>
+                  </div>
+                </label>
+                <button 
+                  onClick={() => editor?.chain().focus().toggleBold().run()}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition ${editor?.isActive('bold') ? 'bg-[#c30F45]/10 text-[#c30F45]' : 'hover:bg-[#c30F45]/10 text-gray-500 hover:text-[#c30F45]'}`}
+                >
+                  <span className="font-bold">B</span>
+                </button>
+                <button 
+                  onClick={() => editor?.chain().focus().toggleItalic().run()}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition ${editor?.isActive('italic') ? 'bg-[#c30F45]/10 text-[#c30F45]' : 'hover:bg-[#c30F45]/10 text-gray-500 hover:text-[#c30F45]'}`}
+                >
+                  <span className="italic">I</span>
+                </button>
+              </div>
+              <div className="text-xs text-gray-500">
+                {editor?.getText().length} characters
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

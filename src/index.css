@@ -1,17 +1,39 @@
 @import "tailwindcss";
 
-/* @import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities"; */
+:root {
+  --primary: #c30F45;
+  --secondary: #1d9bf0;
+  --background: #000000;
+  --border: #2f3336;
+}
 
 body {
-   @apply bg-gradient-to-br from-[#0f0f1c] via-[#1a1a2e] to-[#1f1f38] text-white;
-  font-family: "Open Sans", sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background);
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-.dark body {
-  /* @apply bg-white text-[#231123]; */
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
 }
-html {
-  scroll-behavior: smooth;
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2f3336;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3e4144;
+}
+
+/* Transitions */
+.transition-standard {
+  transition: all 0.2s ease-in-out;
 }
