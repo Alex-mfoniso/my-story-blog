@@ -37,7 +37,7 @@ const MainLayout = ({ children }) => {
       <main className="w-full max-w-[600px] border-x border-[#2f3336] min-h-screen flex flex-col relative lg:ml-64 xl:mr-80 xl:ml-64">
         {/* Mobile Header (Sticky) */}
         <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-[#2f3336] px-4 py-3 flex items-center justify-between lg:hidden">
-          <Link to="/">
+          <Link to="/home">
             <h1 className="text-xl font-extrabold text-[#c30F45]">A's Stories</h1>
           </Link>
           {user ? (
@@ -72,7 +72,7 @@ const MainLayout = ({ children }) => {
         {/* Mobile Navigation (Bottom Bar) */}
         <nav className="fixed bottom-0 left-0 w-full bg-black border-t border-[#2f3336] flex justify-around items-center py-3 lg:hidden z-50">
           {/* Replaced emojis with Lucide icons */}
-          <Link to="/" className="text-2xl"><Home /></Link>
+          <Link to="/home" className="text-2xl"><Home /></Link>
           <Link to="/stories" className="text-2xl"><Search /></Link>
           <Link to="/notifications" className="text-2xl"><Bell /></Link>
           <Link to="/profile" className="text-2xl"><User /></Link>

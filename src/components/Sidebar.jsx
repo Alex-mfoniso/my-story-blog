@@ -35,7 +35,7 @@ const Sidebar = () => {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 border-r border-[#2f3336] flex flex-col px-4 py-6 z-50 bg-black hidden lg:flex">
       {/* Logo */}
-      <Link to="/" className="mb-8 px-4">
+      <Link to="/home" className="mb-8 px-4">
         <h1 className="text-2xl font-extrabold text-[#c30F45] tracking-tight">
           A's Stories
         </h1>
@@ -74,6 +74,7 @@ const Sidebar = () => {
           </Link>
         )}
       </nav>
+     
 
       {/* Post Button */}
       {user && (
@@ -85,6 +86,7 @@ const Sidebar = () => {
         </Link>
       )}
 
+<br/>
       {/* User Profile / Logout */}
       <div className="mt-auto border-t border-[#2f3336] pt-4">
         {user ? (
@@ -109,7 +111,7 @@ const Sidebar = () => {
               className="text-gray-500 hover:text-[#c30F45] transition-colors"
               title="Logout"
             >
-              <DoorOpen /> {/* Replaced 🚪 with DoorOpen icon */}
+              {/* <DoorOpen /> Replaced 🚪 with DoorOpen icon */}
             </button>
           </div>
         ) : (
