@@ -53,6 +53,12 @@ import AdminPage from "../pages/AdminPage";
 import AuthorProfile from "../pages/AuthorProfile";
 import Notifications from "../pages/Notifications";
 import SearchUsers from "../pages/SearchUsers";
+import TermsPage from "../pages/TermsPage";
+import PrivacyPolicyPage from "../pages/PrivacyPolicyPage";
+import CookiePolicyPage from "../pages/CookiePolicyPage";
+import AccessibilityPage from "../pages/AccessibilityPage";
+import OnboardingPage from "../pages/OnboardingPage"; // Import OnboardingPage
+
 // import LoginForm from "../components/LoginFo";
 // import other pages as you create them (e.g. Stories, Upload, Login)
 
@@ -61,7 +67,8 @@ const AppRouter = () => {
     <>
       {/* <Router> */}
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<OnboardingPage />} /> {/* Set OnboardingPage as default */}
+        <Route path="/home" element={<Home />} /> {/* Move Home to /home */}
         <Route path="/upload" element={<Upload />} />
         <Route path="/story/:id" element={<StoryDetail />} />
         <Route path="/author/:id" element={<AuthorProfile />} />
@@ -76,6 +83,10 @@ const AppRouter = () => {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/search-users" element={<SearchUsers />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/cookie-policy" element={<CookiePolicyPage />} />
+        <Route path="/accessibility" element={<AccessibilityPage />} />
         {/* Add more routes here as you build */}
       </Routes>
       {/* </Router> */}

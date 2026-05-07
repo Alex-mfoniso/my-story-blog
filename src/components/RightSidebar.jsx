@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+  orderBy,
+} from "firebase/firestore";
 import { db } from "../firebase/fireabase";
 import { useAuth } from "../context/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
@@ -26,10 +33,10 @@ const RightSidebar = () => {
           collection(db, "users"),
           where("displayNameLower", ">=", lowerQuery),
           where("displayNameLower", "<=", lowerQuery + "\uf8ff"),
-          limit(5)
+          limit(5),
         );
         const snapshot = await getDocs(q);
-        setSearchResults(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        setSearchResults(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
       } catch (err) {
         console.error("Search error:", err);
       }
@@ -45,12 +52,12 @@ const RightSidebar = () => {
         const q = query(
           collection(db, "users"),
           orderBy("createdAt", "desc"),
-          limit(4)
+          limit(4),
         );
         const snapshot = await getDocs(q);
         const users = snapshot.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(u => u.id !== user?.uid);
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((u) => u.id !== user?.uid);
         setSuggestedUsers(users);
       } catch (err) {
         console.error("Error fetching suggestions:", err);
@@ -74,7 +81,7 @@ const RightSidebar = () => {
             onFocus={() => setShowSearch(true)}
             className="bg-[#202327] border-transparent rounded-full py-2.5 px-12 text-sm text-white focus:outline-none focus:bg-black focus:border-[#c30F45] focus:ring-1 focus:ring-[#c30F45] w-full transition-all duration-200"
           />
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></span>
         </div>
 
         <AnimatePresence>
@@ -85,17 +92,28 @@ const RightSidebar = () => {
               exit={{ opacity: 0, y: 10 }}
               className="absolute top-full left-0 w-full bg-black border border-[#2f3336] rounded-xl mt-2 overflow-hidden shadow-2xl z-[60]"
             >
-              {searchResults.map(u => (
+              {searchResults.map((u) => (
                 <Link
                   key={u.id}
                   to={`/author/${u.id}`}
-                  onClick={() => { setShowSearch(false); setSearchQuery(""); }}
+                  onClick={() => {
+                    setShowSearch(false);
+                    setSearchQuery("");
+                  }}
                   className="flex items-center gap-3 p-3 hover:bg-[#181818] transition border-b border-[#2f3336] last:border-0"
                 >
-                  <img src={u.photoURL} className="w-10 h-10 rounded-full border border-[#2f3336]" alt="" />
+                  <img
+                    src={u.photoURL}
+                    className="w-10 h-10 rounded-full border border-[#2f3336]"
+                    alt=""
+                  />
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white">{u.displayName}</span>
-                    <span className="text-xs text-gray-500">@{u.email?.split("@")[0]}</span>
+                    <span className="text-sm font-bold text-white">
+                      {u.displayName}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      @{u.email?.split("@")[0]}
+                    </span>
                   </div>
                 </Link>
               ))}
@@ -113,23 +131,35 @@ const RightSidebar = () => {
 
       {/* Who to follow */}
       <div className="bg-[#16181c] rounded-2xl overflow-hidden border border-[#16181c]">
-        <h2 className="text-xl font-extrabold text-white px-4 py-3">Who to follow</h2>
-        
+        <h2 className="text-xl font-extrabold text-white px-4 py-3">
+          Who to follow
+        </h2>
+
         {loadingSuggestions ? (
-          <div className="p-4 text-center text-gray-500 text-sm">Loading authors...</div>
+          <div className="p-4 text-center text-gray-500 text-sm">
+            Loading authors...
+          </div>
         ) : suggestedUsers.length > 0 ? (
           <div className="flex flex-col">
-            {suggestedUsers.map(u => (
+            {suggestedUsers.map((u) => (
               <Link
                 key={u.id}
                 to={`/author/${u.id}`}
                 className="flex items-center justify-between px-4 py-3 hover:bg-[#1d1f23] transition duration-200"
               >
                 <div className="flex items-center gap-3">
-                  <img src={u.photoURL} className="w-10 h-10 rounded-full border border-[#2f3336]" alt="" />
+                  <img
+                    src={u.photoURL}
+                    className="w-10 h-10 rounded-full border border-[#2f3336]"
+                    alt=""
+                  />
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white truncate w-24">{u.displayName}</span>
-                    <span className="text-xs text-gray-500 truncate w-24">@{u.email?.split("@")[0]}</span>
+                    <span className="text-sm font-bold text-white truncate w-24">
+                      {u.displayName}
+                    </span>
+                    <span className="text-xs text-gray-500 truncate w-24">
+                      @{u.email?.split("@")[0]}
+                    </span>
                   </div>
                 </div>
                 <button className="bg-white text-black px-4 py-1.5 rounded-full text-sm font-bold hover:bg-gray-200 transition-colors">
@@ -137,7 +167,10 @@ const RightSidebar = () => {
                 </button>
               </Link>
             ))}
-            <Link to="/search-users" className="p-4 text-[#c30F45] text-sm hover:bg-[#1d1f23] transition">
+            <Link
+              to="/search-users"
+              className="p-4 text-[#c30F45] text-sm hover:bg-[#1d1f23] transition"
+            >
               Show more
             </Link>
           </div>
@@ -148,10 +181,18 @@ const RightSidebar = () => {
 
       {/* Footer / Links */}
       <div className="mt-6 px-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-        <Link to="/" className="hover:underline">Terms of Service</Link>
-        <Link to="/" className="hover:underline">Privacy Policy</Link>
-        <Link to="/" className="hover:underline">Cookie Policy</Link>
-        <Link to="/" className="hover:underline">Accessibility</Link>
+        <Link to="/" className="hover:underline">
+          Terms of Service
+        </Link>
+        <Link to="/" className="hover:underline">
+          Privacy Policy
+        </Link>
+        <Link to="/" className="hover:underline">
+          Cookie Policy
+        </Link>
+        <Link to="/" className="hover:underline">
+          Accessibility
+        </Link>
         <span>© 2026 Alex's Stories</span>
       </div>
     </aside>

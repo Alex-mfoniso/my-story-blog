@@ -36,10 +36,10 @@ const MyBookmarks = () => {
             const storyData = storySnap.data();
 
             const likesSnap = await getCountFromServer(
-              collection(db, "stories", storyId, "likes")
+              collection(db, "stories", storyId, "likes"),
             );
             const commentsSnap = await getCountFromServer(
-              collection(db, "stories", storyId, "comments")
+              collection(db, "stories", storyId, "comments"),
             );
 
             return {
@@ -48,7 +48,7 @@ const MyBookmarks = () => {
               likeCount: likesSnap.data().count,
               commentCount: commentsSnap.data().count,
             };
-          })
+          }),
         );
 
         setBookmarkedStories(stories.filter(Boolean));
@@ -66,7 +66,7 @@ const MyBookmarks = () => {
     if (!user) return;
 
     const confirm = window.confirm(
-      "Are you sure you want to remove this story from your bookmarks?"
+      "Are you sure you want to remove this story from your bookmarks?",
     );
 
     if (!confirm) return;
@@ -75,7 +75,7 @@ const MyBookmarks = () => {
       const bookmarkRef = doc(db, "users", user.uid, "bookmarks", storyId);
       await deleteDoc(bookmarkRef);
       setBookmarkedStories((prev) =>
-        prev.filter((story) => story.id !== storyId)
+        prev.filter((story) => story.id !== storyId),
       );
 
       toast.success("✅ Bookmark removed successfully!");
@@ -113,18 +113,18 @@ const MyBookmarks = () => {
           {bookmarkedStories.map((story) => (
             <div
               key={story.id}
-className="bg-[#3a263e]/80 backdrop-blur-sm border border-[#4d3754] rounded-xl p-6 shadow-inner transition hover:shadow-pink-400/20"
+              className="bg-[#3a263e]/80 backdrop-blur-sm border border-[#4d3754] rounded-xl p-6 shadow-inner transition hover:shadow-pink-400/20"
             >
               <h3 className="text-xl font-semibold text-[#c30F45] mb-2">
                 {story.title}
               </h3>
               <p className="text-sm text-gray-300 mb-2 italic">
-                {story.genre} • by {story.author?.name || "Anonymous"}
+                {story.genre} • by{" "}
+                {story.author?.name || story.authorName || "Anonymous"}
               </p>
-              <div
-                className="text-gray-200 text-sm line-clamp-3 mb-4"
-                dangerouslySetInnerHTML={{ __html: story.content }}
-              />
+              <p className="text-gray-200 text-sm line-clamp-3 mb-4">
+                {story.excerpt || "No preview available..."}
+              </p>
               <div className="flex justify-between items-center text-xs text-gray-400 mb-3">
                 <div>
                   <span>❤️ {story.likeCount} likes</span> •{" "}

@@ -1,78 +1,3 @@
-// import React, { useState, useEffect } from "react";
-// import { useAuth } from "../context/AuthContext";
-
-// const Header = () => {
-//   const [open, setOpen] = useState(false);
-//   const [darkMode, setDarkMode] = useState(() => {
-//     return localStorage.getItem("theme") === "dark";
-//   });
-
-//   const { user } = useAuth();
-
-//   useEffect(() => {
-//     const root = document.documentElement;
-//     if (darkMode) {
-//       root.classList.add("dark");
-//       localStorage.setItem("theme", "dark");
-//     } else {
-//       root.classList.remove("dark");
-//       localStorage.setItem("theme", "light");
-//     }
-//   }, [darkMode]);
-
-//   return (
-//     <header className="w-full px-6 py-4 flex justify-between items-center bg-[#231123] text-white fixed top-0 z-50">
-//       <h1 className="text-xl font-bold" style={{ color: "#c30F45" }}>
-//         Alex's Stories
-//       </h1>
-
-//       <div className="flex items-center gap-4">
-//         <button
-//           onClick={() => setOpen(!open)}
-//           className="md:hidden text-white text-2xl"
-//         >
-//           ☰
-//         </button>
-//       </div>
-
-//       <nav
-//         className={`${
-//           open ? "block" : "hidden"
-//         } absolute top-16 left-0 w-full bg-[#231123] md:static md:flex md:space-x-6 md:w-auto`}
-//       >
-//         <a href="/" className="block px-4 py-2 hover:text-[#c30F45]">
-//           Home
-//         </a>
-//         <a href="/stories" className="block px-4 py-2 hover:text-[#c30F45]">
-//           Stories
-//         </a>
-
-//         {user ? (
-//         <>
-//             <a href="/bookmarks" className="block px-4 py-2 hover:text-[#c30F45]">
-//               My Bookmarks
-//             </a>
-//             <a href="/profile" className="block px-4 py-2 hover:text-[#c30F45]">
-//               Profile
-//             </a>
-//           </>
-//         ) : (
-//           <>
-//             <a href="/login" className="block px-4 py-2 hover:text-[#c30F45]">
-//               Login
-//             </a>
-//             <a href="/register" className="block px-4 py-2 hover:text-[#c30F45]">
-//               Register
-//             </a>
-//           </>
-//         )}
-//       </nav>
-//     </header>
-//   );
-// };
-
-// export default Header;
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -80,6 +5,7 @@ import { Link } from "react-router-dom";
 
 import { collection, query, where, onSnapshot, getDocs, limit } from "firebase/firestore";
 import { db } from "../firebase/fireabase";
+import { Bell } from "lucide-react"; // Ensure Bell is imported
 
 const ADMIN_UID = "jUVRPKVD9VWGk0guVbDT68FTgxj1";
 
@@ -247,7 +173,7 @@ const Header = () => {
             <Link to="/bookmarks" className="hover:text-[#c30F45]">My Bookmarks</Link>
             <Link to="/profile" className="hover:text-[#c30F45]">Profile</Link>
             <Link to="/notifications" className="relative hover:text-[#c30F45] flex items-center">
-              🔔
+              <Bell /> {/* Replaced 🔔 emoji with Lucide Bell icon */}
               {unreadCount > 0 && (
                 <span className="absolute -top-2 -right-3 bg-[#c30F45] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                   {unreadCount}
@@ -271,7 +197,7 @@ const Header = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="absolute left-0 w-full bg-[#0c0c0c] shadow-lg md:hidden flex flex-col items-start px-6 py-4 space-y-4 text-sm z-40"
+            className="absolute left-0 w-full bg-[#0c0c0c] shadow-lg md:hidden flex flex-col items-start px-6 py-4 space-y-4 z-40"
             style={{ top: "100%" }} // fix the mobile menu to stick to bottom of header without space
           >
             {/* Mobile Search */}
@@ -309,6 +235,15 @@ const Header = () => {
                 )}
                 <Link to="/bookmarks" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">My Bookmarks</Link>
                 <Link to="/profile" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">Profile</Link>
+                {/* Added Notification link to Mobile Nav */}
+                <Link to="/notifications" onClick={() => setOpen(false)} className="relative hover:text-[#c30F45] flex items-center">
+                  <Bell /> {/* Use Lucide Bell icon */}
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-[#c30F45] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
+                </Link>
               </>
             ) : (
               <>

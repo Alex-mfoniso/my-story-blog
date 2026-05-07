@@ -1,6 +1,16 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import {
+  Home,
+  Search, // Keep Search import in case it's used elsewhere
+  Bell,
+  Bookmark,
+  Users,
+  User,
+  Shield,
+  DoorOpen,
+} from "lucide-react"; // Added Lucide imports
 
 const ADMIN_UID = "jUVRPKVD9VWGk0guVbDT68FTgxj1";
 
@@ -9,13 +19,14 @@ const Sidebar = () => {
   const location = useLocation();
   const isAdmin = user?.uid === ADMIN_UID;
 
+  // Updated navItems: Restored icon for "Explore"
   const navItems = [
-    { name: "Home", path: "/", icon: "🏠" },
-    { name: "Explore", path: "/stories", icon: "🔍" },
-    { name: "Notifications", path: "/notifications", icon: "🔔", auth: true },
-    { name: "Bookmarks", path: "/bookmarks", icon: "🔖", auth: true },
-    { name: "Find Authors", path: "/search-users", icon: "👥", auth: true },
-    { name: "Profile", path: "/profile", icon: "👤", auth: true },
+    { name: "Home", path: "/", icon: Home },
+    { name: "Explore", path: "/stories", icon: Search }, // Restored Search icon
+    { name: "Notifications", path: "/notifications", icon: Bell, auth: true },
+    { name: "Bookmarks", path: "/bookmarks", icon: Bookmark, auth: true },
+    { name: "Find Authors", path: "/search-users", icon: Users, auth: true },
+    { name: "Profile", path: "/profile", icon: User, auth: true },
   ];
 
   const activeClass = "font-bold text-[#c30F45]";
@@ -43,7 +54,9 @@ const Sidebar = () => {
                 isActive ? activeClass : inactiveClass
               }`}
             >
-              <span>{item.icon}</span>
+              {item.icon && ( // Conditionally render the icon span
+                <span><item.icon /></span>
+              )}
               <span>{item.name}</span>
             </Link>
           );
@@ -56,7 +69,7 @@ const Sidebar = () => {
               location.pathname === "/admin" ? activeClass : inactiveClass
             }`}
           >
-            <span>🛡️</span>
+            <span><Shield /></span> {/* Replaced 🛡️ with Shield icon */}
             <span>Admin</span>
           </Link>
         )}
@@ -96,7 +109,7 @@ const Sidebar = () => {
               className="text-gray-500 hover:text-[#c30F45] transition-colors"
               title="Logout"
             >
-              🚪
+              <DoorOpen /> {/* Replaced 🚪 with DoorOpen icon */}
             </button>
           </div>
         ) : (

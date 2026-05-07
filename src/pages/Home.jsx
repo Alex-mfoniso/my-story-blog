@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase/fireabase";
-import { collection, query, orderBy, limit, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  getDocs,
+  doc,
+  setDoc,
+  deleteDoc,
+} from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
+import StoryCardSkeleton from "../components/StoryCardSkeleton"; // Import the skeleton
 import StoryCard from "../components/StoryCard";
 
 const Home = () => {
@@ -35,7 +45,7 @@ const Home = () => {
               likes: likesSnap.size,
               commentCount: commentsSnap.size,
             };
-          })
+          }),
         );
 
         setStories(storiesWithCounts);
@@ -48,7 +58,9 @@ const Home = () => {
 
     const fetchBookmarks = async () => {
       if (!user) return;
-      const snapshot = await getDocs(collection(db, "users", user.uid, "bookmarks"));
+      const snapshot = await getDocs(
+        collection(db, "users", user.uid, "bookmarks"),
+      );
       setBookmarkIds(new Set(snapshot.docs.map((doc) => doc.id)));
     };
 
@@ -82,14 +94,19 @@ const Home = () => {
       {/* Stories Feed */}
       <div className="pb-20 lg:pb-0">
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="w-8 h-8 border-2 border-[#c30F45] border-t-transparent rounded-full animate-spin" />
-          </div>
+          <>
+            <div className="flex justify-center items-center py-20">
+              <div className="w-8 h-8 border-2 border-[#c30F45] border-t-transparent rounded-full animate-spin" />
+            </div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <StoryCardSkeleton key={i} />
+            ))}
+          </>
         ) : stories.length > 0 ? (
           stories.map((story) => (
-            <StoryCard 
-              key={story.id} 
-              story={story} 
+            <StoryCard
+              key={story.id}
+              story={story}
               onBookmark={toggleBookmark}
               isBookmarked={bookmarkIds.has(story.id)}
             />

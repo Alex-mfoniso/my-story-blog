@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { db } from "../firebase/fireabase";
-import { collection, deleteDoc, doc, getDocs, query, where, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "../context/AuthContext";
@@ -16,9 +24,12 @@ const ManageStories = () => {
   useEffect(() => {
     if (!user) return;
 
-    const q = query(collection(db, "stories"), where("authorId", "==", user.uid));
+    const q = query(
+      collection(db, "stories"),
+      where("authorId", "==", user.uid),
+    );
     const unsubscribe = onSnapshot(q, (snap) => {
-      setStories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setStories(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
 
@@ -26,7 +37,7 @@ const ManageStories = () => {
   }, [user]);
 
   const filtered = stories.filter((s) =>
-    s.title?.toLowerCase().includes(search.toLowerCase())
+    s.title?.toLowerCase().includes(search.toLowerCase()),
   );
 
   const canEditStory = (story) => {
@@ -65,7 +76,7 @@ const ManageStories = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="bg-[#202327] border-transparent rounded-full py-2 px-10 text-sm text-white focus:outline-none focus:bg-black focus:border-[#c30F45] focus:ring-1 focus:ring-[#c30F45] w-full transition-all duration-200"
           />
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></span>
         </div>
       </div>
 
@@ -76,21 +87,41 @@ const ManageStories = () => {
             <div className="w-8 h-8 border-2 border-[#c30F45] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">No stories found.</div>
+          <div className="text-center py-20 text-gray-500">
+            No stories found.
+          </div>
         ) : (
           filtered.map((story) => (
-            <div key={story.id} className="p-4 border-b border-[#2f3336] hover:bg-[#080808] transition duration-200">
+            <div
+              key={story.id}
+              className="p-4 border-b border-[#2f3336] hover:bg-[#080808] transition duration-200"
+            >
               <div className="flex justify-between items-start gap-4">
                 <div className="min-w-0">
-                  <h3 className="font-bold text-white text-lg truncate mb-1">{story.title}</h3>
+                  <h3 className="font-bold text-white text-lg truncate mb-1">
+                    {story.title}
+                  </h3>
                   <div className="flex gap-2 text-xs text-gray-500">
-                    <span className="text-[#c30F45] font-bold">{story.genre}</span>
+                    <span className="text-[#c30F45] font-bold">
+                      {story.genre}
+                    </span>
                     <span>·</span>
-                    <span>{story.createdAt?.seconds ? formatDistanceToNow(new Date(story.createdAt.seconds * 1000), { addSuffix: true }) : "just now"}</span>
+                    <span>
+                      {story.createdAt?.seconds
+                        ? formatDistanceToNow(
+                            new Date(story.createdAt.seconds * 1000),
+                            { addSuffix: true },
+                          )
+                        : "just now"}
+                    </span>
                   </div>
-                  {story.isDraft && <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded mt-2 inline-block">DRAFT</span>}
+                  {story.isDraft && (
+                    <span className="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded mt-2 inline-block">
+                      DRAFT
+                    </span>
+                  )}
                 </div>
-                
+
                 <div className="flex flex-col gap-2">
                   {canEditStory(story) ? (
                     <Link
@@ -100,7 +131,9 @@ const ManageStories = () => {
                       Edit
                     </Link>
                   ) : (
-                    <span className="text-[10px] text-gray-600 font-bold text-right">Locked</span>
+                    <span className="text-[10px] text-gray-600 font-bold text-right">
+                      Locked
+                    </span>
                   )}
                   <button
                     onClick={() => handleDelete(story.id)}

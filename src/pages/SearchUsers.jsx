@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { collection, query, where, getDocs, limit, doc, deleteDoc, setDoc, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+  doc,
+  deleteDoc,
+  setDoc,
+  onSnapshot,
+} from "firebase/firestore";
 import { db } from "../firebase/fireabase";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -14,9 +24,12 @@ const SearchUsers = () => {
 
   useEffect(() => {
     if (!user) return;
-    const unsub = onSnapshot(collection(db, "users", user.uid, "following"), (snap) => {
-      setFollowingIds(new Set(snap.docs.map(d => d.id)));
-    });
+    const unsub = onSnapshot(
+      collection(db, "users", user.uid, "following"),
+      (snap) => {
+        setFollowingIds(new Set(snap.docs.map((d) => d.id)));
+      },
+    );
     return () => unsub();
   }, [user]);
 
@@ -34,14 +47,14 @@ const SearchUsers = () => {
           collection(db, "users"),
           where("displayNameLower", ">=", lowerQuery),
           where("displayNameLower", "<=", lowerQuery + "\uf8ff"),
-          limit(20)
+          limit(20),
         );
-        
+
         const snap = await getDocs(q);
         const users = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(u => u.id !== user?.uid);
-        
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((u) => u.id !== user?.uid);
+
         setResults(users);
       } catch (err) {
         console.error("Search error:", err);
@@ -79,7 +92,7 @@ const SearchUsers = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="bg-[#202327] border-transparent rounded-full py-2.5 px-12 text-sm text-white focus:outline-none focus:bg-black focus:border-[#c30F45] focus:ring-1 focus:ring-[#c30F45] w-full transition-all duration-200"
           />
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">🔍</span>
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></span>
         </div>
       </header>
 
@@ -91,19 +104,32 @@ const SearchUsers = () => {
           </div>
         ) : results.length > 0 ? (
           results.map((u) => (
-            <div key={u.id} className="p-4 border-b border-[#2f3336] hover:bg-[#080808] transition duration-200 flex items-center justify-between">
-              <Link to={`/author/${u.id}`} className="flex items-center gap-3 min-w-0">
-                <img 
-                  src={u.photoURL || `https://ui-avatars.com/api/?name=${u.displayName}`} 
-                  alt="" 
+            <div
+              key={u.id}
+              className="p-4 border-b border-[#2f3336] hover:bg-[#080808] transition duration-200 flex items-center justify-between"
+            >
+              <Link
+                to={`/author/${u.id}`}
+                className="flex items-center gap-3 min-w-0"
+              >
+                <img
+                  src={
+                    u.photoURL ||
+                    `https://ui-avatars.com/api/?name=${u.displayName}`
+                  }
+                  alt=""
                   className="w-12 h-12 rounded-full border border-[#2f3336] flex-shrink-0"
                 />
                 <div className="min-w-0">
-                  <h3 className="font-bold text-white hover:underline truncate">{u.displayName}</h3>
-                  <p className="text-gray-500 text-sm truncate">@{u.email?.split("@")[0]}</p>
+                  <h3 className="font-bold text-white hover:underline truncate">
+                    {u.displayName}
+                  </h3>
+                  <p className="text-gray-500 text-sm truncate">
+                    @{u.email?.split("@")[0]}
+                  </p>
                 </div>
               </Link>
-              <button 
+              <button
                 onClick={() => toggleFollow(u.id)}
                 className={`px-4 py-1.5 rounded-full text-sm font-bold transition ${followingIds.has(u.id) ? "border border-[#2f3336] text-white hover:text-red-500 hover:border-red-500" : "bg-white text-black hover:bg-gray-200"}`}
               >
@@ -113,8 +139,12 @@ const SearchUsers = () => {
           ))
         ) : searchTerm.length >= 2 ? (
           <div className="text-center py-20 px-8">
-            <h3 className="text-2xl font-bold text-white mb-2">No results for "{searchTerm}"</h3>
-            <p className="text-gray-500 text-sm">Try searching for people you know or keywords.</p>
+            <h3 className="text-2xl font-bold text-white mb-2">
+              No results for "{searchTerm}"
+            </h3>
+            <p className="text-gray-500 text-sm">
+              Try searching for people you know or keywords.
+            </p>
           </div>
         ) : (
           <div className="p-8 text-center text-gray-500">
