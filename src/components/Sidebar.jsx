@@ -21,7 +21,7 @@ const Sidebar = () => {
 
   // Updated navItems: Restored icon for "Explore"
   const navItems = [
-    { name: "Home", path: "/", icon: Home },
+    { name: "Home", path: "/home", icon: Home },
     { name: "Explore", path: "/stories", icon: Search }, // Restored Search icon
     { name: "Notifications", path: "/notifications", icon: Bell, auth: true },
     { name: "Bookmarks", path: "/bookmarks", icon: Bookmark, auth: true },

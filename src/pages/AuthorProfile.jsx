@@ -1,6 +1,14 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { doc, getDoc, collection, query, where, orderBy, getDocs, setDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import {
+  doc,
+  collection,
+  query,
+  where,
+  deleteDoc,
+  setDoc,
+  onSnapshot,
+} from "firebase/firestore";
 import { db } from "../firebase/fireabase";
 import { useAuth } from "../context/AuthContext";
 import { formatDistanceToNow } from "date-fns";
@@ -8,48 +16,55 @@ import { formatDistanceToNow } from "date-fns";
 const AuthorProfile = () => {
   const { id } = useParams();
   const { user } = useAuth();
-  
+
   const [author, setAuthor] = useState(null);
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
 
   useEffect(() => {
     setLoading(true);
 
-    // 1. Author Profile Listener
-    const unsubAuthor = onSnapshot(doc(db, "users", id), (docSnap) => {
-      if (docSnap.exists()) {
-        setAuthor({ id: docSnap.id, ...docSnap.data() });
+    const unsubAuthor = onSnapshot(doc(db, "users", id), (snap) => {
+      if (snap.exists()) {
+        setAuthor({ id: snap.id, ...snap.data() });
       }
     });
 
-    // 2. Stories Listener
-    const storiesQ = query(collection(db, "stories"), where("authorId", "==", id));
+    const storiesQ = query(
+      collection(db, "stories"),
+      where("authorId", "==", id)
+    );
+
     const unsubStories = onSnapshot(storiesQ, (snap) => {
-      const publishedDocs = snap.docs
-        .filter(d => d.data().isDraft !== true)
-        .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => {
-          const dateA = a.createdAt?.seconds || 0;
-          const dateB = b.createdAt?.seconds || 0;
-          return dateB - dateA;
-        });
-      setStories(publishedDocs);
+      const data = snap.docs
+        .filter((d) => d.data().isDraft !== true)
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort(
+          (a, b) =>
+            (b.createdAt?.seconds || 0) -
+            (a.createdAt?.seconds || 0)
+        );
+
+      setStories(data);
     });
 
-    // 3. Followers Listener
-    const unsubFollowers = onSnapshot(collection(db, "users", id, "followers"), (snap) => {
-      setFollowerCount(snap.size);
-      
-      // Check if current user is in this list
-      if (user) {
-        setIsFollowing(snap.docs.some(d => d.id === user.uid));
+    const unsubFollowers = onSnapshot(
+      collection(db, "users", id, "followers"),
+      (snap) => {
+        setFollowerCount(snap.size);
+
+        if (user) {
+          setIsFollowing(
+            snap.docs.some((d) => d.id === user.uid)
+          );
+        }
+
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    );
 
     return () => {
       unsubAuthor();
@@ -59,106 +74,173 @@ const AuthorProfile = () => {
   }, [id, user]);
 
   const toggleFollow = async () => {
-    if (!user) return alert("You must be logged in to follow an author.");
-    if (user.uid === id) return; // Can't follow yourself
+    if (!user) return alert("Login required");
+    if (user.uid === id) return;
 
-    try {
-      const followerRef = doc(db, "users", id, "followers", user.uid);
-      const followingRef = doc(db, "users", user.uid, "following", id);
+    const followerRef = doc(
+      db,
+      "users",
+      id,
+      "followers",
+      user.uid
+    );
 
-      if (isFollowing) {
-        await deleteDoc(followerRef);
-        await deleteDoc(followingRef);
-        setFollowerCount(prev => Math.max(0, prev - 1));
-        setIsFollowing(false);
-      } else {
-        await setDoc(followerRef, { followedAt: new Date() });
-        await setDoc(followingRef, { followedAt: new Date() });
-        setFollowerCount(prev => prev + 1);
-        setIsFollowing(true);
+    const followingRef = doc(
+      db,
+      "users",
+      user.uid,
+      "following",
+      id
+    );
 
-        // TRIGGER NOTIFICATION
-        const notifRef = doc(collection(db, "users", id, "notifications"));
-        await setDoc(notifRef, {
-          type: "follow",
-          fromUserId: user.uid,
-          fromUserName: user.displayName || "Someone",
-          read: false,
-          createdAt: new Date()
-        });
-      }
-    } catch (error) {
-      console.error("Error toggling follow:", error);
-      alert("Failed to follow/unfollow. Security rules might need updating.");
+    if (isFollowing) {
+      await deleteDoc(followerRef);
+      await deleteDoc(followingRef);
+      setFollowerCount((p) => Math.max(0, p - 1));
+      setIsFollowing(false);
+    } else {
+      await setDoc(followerRef, {
+        followedAt: new Date(),
+      });
+
+      await setDoc(followingRef, {
+        followedAt: new Date(),
+      });
+
+      setFollowerCount((p) => p + 1);
+      setIsFollowing(true);
     }
   };
 
-  if (loading) return <div className="min-h-screen flex justify-center items-center bg-[#231123] text-white">Loading profile...</div>;
-  if (!author) return <div className="min-h-screen flex justify-center items-center bg-[#231123] text-white">Author not found.</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        Loading...
+      </div>
+    );
+
+  if (!author)
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        Author not found
+      </div>
+    );
 
   return (
-    <div className="min-h-screen bg-[#231123] text-white pt-24 pb-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        
-        {/* Profile Header */}
-        <div className="bg-[#2c1b2f] p-8 rounded-2xl shadow-xl flex flex-col md:flex-row items-center md:items-start gap-6 border border-[#3a2e4e] mb-10 relative">
-          <img 
-            src={author.photoURL || `https://ui-avatars.com/api/?name=${author.displayName}`} 
-            alt={author.displayName} 
-            className="w-32 h-32 rounded-full border-4 border-[#c30F45] object-cover"
+    <div className="min-h-screen bg-black text-white">
+
+      {/* TOP BANNER (X style) */}
+      <div className="h-40 bg-[#16181c] relative" />
+
+      {/* PROFILE SECTION */}
+      <div className="max-w-3xl mx-auto px-4">
+
+        {/* AVATAR OVERLAP */}
+        <div className="flex justify-between items-start -mt-12">
+
+          <img
+            src={
+              author.photoURL ||
+              `https://ui-avatars.com/api/?name=${author.displayName}`
+            }
+            className="w-24 h-24 rounded-full border-4 border-black object-cover"
           />
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="text-4xl font-bold text-white mb-2">{author.displayName}</h1>
-            <p className="text-gray-400 mb-4">Joined {author.createdAt?.seconds ? formatDistanceToNow(new Date(author.createdAt.seconds * 1000), { addSuffix: true }) : 'recently'}</p>
-            <div className="flex justify-center md:justify-start gap-6 text-sm text-gray-300">
-              <div className="text-center">
-                <span className="block font-bold text-2xl text-[#c30F45]">{stories.length}</span>
-                Stories
-              </div>
-              <div className="text-center">
-                <span className="block font-bold text-2xl text-[#c30F45]">{followerCount}</span>
-                Followers
-              </div>
-            </div>
-          </div>
-          
+
           {user && user.uid !== id && (
-            <button 
+            <button
               onClick={toggleFollow}
-              className={`absolute top-8 right-8 px-6 py-2 rounded-full font-semibold transition shadow-lg ${
-                isFollowing 
-                  ? "bg-gray-700 text-white hover:bg-gray-600" 
-                  : "bg-[#c30F45] text-white hover:bg-pink-600"
+              className={`mt-14 px-5 py-2 rounded-full font-bold text-sm transition ${
+                isFollowing
+                  ? "bg-white text-black"
+                  : "bg-white text-black hover:opacity-80"
               }`}
             >
-              {isFollowing ? "Following" : "Follow"}
+              {isFollowing
+                ? "Following"
+                : "Follow"}
             </button>
           )}
         </div>
 
-        {/* Stories Grid */}
-        <h2 className="text-2xl font-bold mb-6 text-[#c30F45]">Published Works</h2>
-        {stories.length === 0 ? (
-          <p className="text-gray-400 text-center py-10">This author hasn't published any stories yet.</p>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {stories.map(story => (
-              <div key={story.id} className="bg-[#1f1f38]/80 border border-[#3a2e4e] rounded-xl overflow-hidden shadow-lg hover:-translate-y-1 transition duration-300">
-                {story.image && (
-                  <img src={story.image} alt={story.title} className="w-full h-48 object-cover" />
-                )}
-                <div className="p-5">
-                  <h3 className="text-xl font-bold text-white mb-1">{story.title}</h3>
-                  <span className="text-xs bg-[#2c1b2f] px-2 py-1 rounded text-gray-300 mb-3 inline-block">{story.genre}</span>
-                  <p className="text-sm text-gray-400 line-clamp-2 mb-4">{story.excerpt}</p>
-                  <Link to={`/story/${story.id}`} className="text-[#c30F45] hover:underline text-sm font-semibold">
-                    Read Story →
+        {/* NAME + INFO */}
+        <div className="mt-3">
+          <h1 className="text-2xl font-bold">
+            {author.displayName}
+          </h1>
+
+          <p className="text-gray-500 text-sm">
+            @{author.email?.split("@")[0]}
+          </p>
+
+          <p className="text-gray-400 text-sm mt-2">
+            Joined{" "}
+            {author.createdAt?.seconds
+              ? formatDistanceToNow(
+                  new Date(
+                    author.createdAt.seconds *
+                      1000
+                  ),
+                  { addSuffix: true }
+                )
+              : "recently"}
+          </p>
+
+          {/* STATS */}
+          <div className="flex gap-6 mt-3 text-sm">
+            <span>
+              <b>{stories.length}</b>{" "}
+              <span className="text-gray-500">
+                Posts
+              </span>
+            </span>
+
+            <span>
+              <b>{followerCount}</b>{" "}
+              <span className="text-gray-500">
+                Followers
+              </span>
+            </span>
+          </div>
+        </div>
+
+        {/* DIVIDER */}
+        <div className="border-b border-[#2f3336] mt-6" />
+
+        {/* STORIES */}
+        <div className="mt-4">
+
+          {stories.length === 0 ? (
+            <p className="text-gray-500 text-center py-10">
+              No posts yet.
+            </p>
+          ) : (
+            stories.map((story) => (
+              <div
+                key={story.id}
+                className="border-b border-[#2f3336] py-5 hover:bg-[#0d0d0d] transition px-2"
+              >
+                <h3 className="font-bold text-white">
+                  {story.title}
+                </h3>
+
+                <p className="text-gray-400 text-sm mt-1">
+                  {story.excerpt}
+                </p>
+
+                <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
+                  <span>{story.genre}</span>
+                  <span>•</span>
+                  <Link
+                    to={`/story/${story.id}`}
+                    className="text-[#1d9bf0] hover:underline"
+                  >
+                    Read
                   </Link>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
