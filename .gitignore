@@ -7,7 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build
 dist
 dist-ssr
 *.local
@@ -22,3 +25,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Firebase sensitive files
+.firebaserc
+firebase.json
+firestore.rules
+firestore.indexes.json
+
+# Sensitive scripts
+checkStories.js
+debugFollowers.js
+migrateUsers.js
