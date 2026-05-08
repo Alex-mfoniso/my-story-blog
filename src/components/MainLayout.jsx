@@ -6,7 +6,7 @@ import RightSidebar from "./RightSidebar";
 import CookieConsent from "./CookieConsent";
 
 // Assume these paths are correct for your project structure
-import { Home, Search, Bell, User, Pencil, Plus } from "lucide-react"; // Assuming these are imported for MainLayout usage
+import { Home, Search, Bell, User, Pencil, Plus } from "lucide-react"; // Removed Bookmark icon
 
 // Import the newly created policy page components
 import TermsPage from "../pages/TermsPage";
