@@ -6,7 +6,7 @@ import RightSidebar from "./RightSidebar";
 import CookieConsent from "./CookieConsent";
 
 // Assume these paths are correct for your project structure
-import { Home, Search, Bell, User, Pencil } from "lucide-react"; // Assuming these are imported for MainLayout usage
+import { Home, Search, Bell, User, Pencil, Plus } from "lucide-react"; // Assuming these are imported for MainLayout usage
 
 // Import the newly created policy page components
 import TermsPage from "../pages/TermsPage";
@@ -72,10 +72,16 @@ const MainLayout = ({ children }) => {
         {/* Mobile Navigation (Bottom Bar) */}
         <nav className="fixed bottom-0 left-0 w-full bg-black border-t border-[#2f3336] flex justify-around items-center py-3 lg:hidden z-50">
           {/* Replaced emojis with Lucide icons */}
-          <Link to="/home" className="text-2xl"><Home /></Link>
-          <Link to="/stories" className="text-2xl"><Search /></Link>
-          <Link to="/notifications" className="text-2xl"><Bell /></Link>
-          <Link to="/profile" className="text-2xl"><User /></Link>
+          <Link to="/home" className="text-3xl"><Home /></Link>
+          <Link to="/stories" className="text-3xl"><Search /></Link>
+          {/* Post Button */}
+          {user && (
+            <Link to="/upload" className="flex items-center justify-center rounded-full bg-[#c30F45] shadow-xl text-white text-3xl">
+              <Plus className="text-white text-3xl" />
+            </Link>
+          )}
+          <Link to="/notifications" className="text-3xl"><Bell /></Link>
+          <Link to="/profile" className="text-3xl"><User /></Link>
         </nav>
       </main>
 
