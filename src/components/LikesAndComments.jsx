@@ -305,7 +305,16 @@ const LikesAndComments = ({ storyId, authorId, storyTitle }) => {
                 <div className="flex items-center gap-1 mb-1">
                   <span className="font-bold text-white text-sm truncate">{reply.author.name}</span>
                   <span className="text-gray-500 text-xs">·</span>
-                  <span className="text-gray-500 text-xs">{formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })}</span>
+                  <span className="text-gray-500 text-xs">
+  {reply.createdAt
+    ? formatDistanceToNow(
+        reply.createdAt?.seconds
+          ? new Date(reply.createdAt.seconds * 1000)
+          : new Date(reply.createdAt),
+        { addSuffix: true }
+      )
+    : 'just now'}
+</span>
                 </div>
                 <p className="text-sm text-white leading-normal">{reply.text}</p>
               </div>
