@@ -95,7 +95,7 @@ const StoryDetail = () => {
       {/* Header with Back Button */}
       <header className="sticky top-0 z-30 bg-black/80 backdrop-blur-md border-b border-[#2f3336] px-4 py-3 flex items-center gap-6">
         <Link to="/" className="hover:bg-[#181818] p-2 rounded-full transition">
-          <span className="text-xl">←</span>
+          {/* <span className="text-xl">←</span> */}
         </Link>
         <div>
           <h2 className="text-lg font-bold leading-tight truncate w-64">{story.title}</h2>
