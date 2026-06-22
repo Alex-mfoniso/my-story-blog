@@ -2,27 +2,89 @@ import React from 'react';
 
 const PrivacyPolicyPage = () => {
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-[#c30F45] mb-4">Privacy Policy</h1>
-      <p className="text-gray-300 mb-4">
-        This is a placeholder for the Privacy Policy.
-        It is crucial to have a comprehensive and legally compliant Privacy Policy tailored to your specific website and jurisdiction.
-        Please consult with a legal professional to draft or review your Privacy Policy to ensure it meets all legal requirements (e.g., GDPR, CCPA).
+    <div className="max-w-4xl mx-auto p-8 text-gray-300">
+      <h1 className="text-4xl font-bold text-[#c30F45] mb-6">
+        Privacy Policy
+      </h1>
+
+      <p className="mb-4">
+        Last Updated: May 7, 2026
       </p>
-      <p className="text-gray-300">
-        Key elements typically included in a Privacy Policy:
+
+      <p className="mb-6">
+        We respect your privacy and are committed to protecting your personal
+        information. This Privacy Policy explains how we collect, use, and
+        safeguard your information when you use our platform.
       </p>
-      <ul className="list-disc list-inside text-gray-300 ml-4">
-        <li>What personal data is collected</li>
-        <li>How the data is collected (e.g., direct input, cookies)</li>
-        <li>Why the data is collected (purpose)</li>
-        <li>How the data is used and stored</li>
-        <li>Data retention periods</li>
-        <li>With whom the data is shared (third parties)</li>
-        <li>User rights regarding their data (e.g., access, rectification, erasure)</li>
-        <li>Contact information for privacy concerns</li>
-        <li>Changes to the Privacy Policy</li>
+
+      <h2 className="text-2xl font-semibold text-white mb-3">
+        Information We Collect
+      </h2>
+
+      <ul className="list-disc ml-6 mb-6 space-y-2">
+        <li>Name, username, and email address</li>
+        <li>Profile information and uploaded content</li>
+        <li>Stories, comments, likes, and bookmarks</li>
+        <li>Device and browser information</li>
+        <li>Usage analytics and activity logs</li>
       </ul>
+
+      <h2 className="text-2xl font-semibold text-white mb-3">
+        How We Use Your Information
+      </h2>
+
+      <ul className="list-disc ml-6 mb-6 space-y-2">
+        <li>To create and manage user accounts</li>
+        <li>To personalize your experience</li>
+        <li>To improve platform performance and security</li>
+        <li>To send notifications and updates</li>
+        <li>To moderate harmful or abusive content</li>
+      </ul>
+
+      <h2 className="text-2xl font-semibold text-white mb-3">
+        Data Protection
+      </h2>
+
+      <p className="mb-6">
+        We take reasonable measures to protect your information from
+        unauthorized access, loss, misuse, or disclosure.
+      </p>
+
+      <h2 className="text-2xl font-semibold text-white mb-3">
+        Third-Party Services
+      </h2>
+
+      <p className="mb-6">
+        Our platform may use third-party services such as authentication,
+        analytics, cloud storage, and payment providers that may collect
+        information in accordance with their own privacy policies.
+      </p>
+
+      <h2 className="text-2xl font-semibold text-white mb-3">
+        Your Rights
+      </h2>
+
+      <p className="mb-6">
+        You may request access, correction, or deletion of your personal data
+        at any time by contacting us.
+      </p>
+
+      <h2 className="text-2xl font-semibold text-white mb-3">
+        Changes to This Policy
+      </h2>
+
+      <p className="mb-6">
+        We may update this Privacy Policy from time to time. Continued use of
+        the platform after changes means you accept the updated policy.
+      </p>
+
+      <h2 className="text-2xl font-semibold text-white mb-3">
+        Contact
+      </h2>
+
+      <p>
+        If you have questions about this Privacy Policy, please contact us.
+      </p>
     </div>
   );
 };
