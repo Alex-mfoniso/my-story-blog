@@ -42,3 +42,9 @@ firestore.indexes.json
 checkStories.js
 debugFollowers.js
 migrateUsers.js
+
+# Secret exports
+api-keys-*.csv
+
+.vercel
+.env*

@@ -41,6 +41,7 @@ const ManageStories = () => {
   );
 
   const canEditStory = (story) => {
+    if (story.isDraft) return true;
     const createdSeconds = story.createdAt?.seconds;
     if (!createdSeconds) return false;
     const createdMs = createdSeconds * 1000;

@@ -10,6 +10,7 @@ import {
   User,
   Shield,
   DoorOpen,
+  FileText,
 } from "lucide-react"; // Added Lucide imports
 
 const ADMIN_UID = "jUVRPKVD9VWGk0guVbDT68FTgxj1";
@@ -26,6 +27,7 @@ const Sidebar = () => {
     { name: "Notifications", path: "/notifications", icon: Bell, auth: true },
     { name: "Bookmarks", path: "/bookmarks", icon: Bookmark, auth: true },
     { name: "Find Authors", path: "/search-users", icon: Users, auth: true },
+    { name: "My Stories", path: "/manage-stories", icon: FileText, auth: true },
     { name: "Profile", path: "/profile", icon: User, auth: true },
   ];
 

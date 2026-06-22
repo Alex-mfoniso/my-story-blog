@@ -170,6 +170,7 @@ const Header = () => {
             <Link to="/search-users" className="hover:text-[#c30F45]">Find Authors</Link>
             <Link to="/upload" className="hover:text-[#c30F45]">Post Story</Link>
             {isAdmin && <Link to="/admin" className="hover:text-[#c30F45]">Admin</Link>}
+            <Link to="/manage-stories" className="hover:text-[#c30F45]">My Stories</Link>
             <Link to="/bookmarks" className="hover:text-[#c30F45]">My Bookmarks</Link>
             <Link to="/profile" className="hover:text-[#c30F45]">Profile</Link>
             <Link to="/notifications" className="relative hover:text-[#c30F45] flex items-center">
@@ -233,6 +234,7 @@ const Header = () => {
                 {isAdmin && (
                   <Link to="/admin" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">Admin</Link>
                 )}
+                <Link to="/manage-stories" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">My Stories</Link>
                 <Link to="/bookmarks" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">My Bookmarks</Link>
                 <Link to="/profile" onClick={() => setOpen(false)} className="hover:text-[#c30F45]">Profile</Link>
                 {/* Added Notification link to Mobile Nav */}

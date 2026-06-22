@@ -390,6 +390,24 @@ const Profile = () => {
 
           <button
             onClick={() =>
+              setActiveTab("drafts")
+            }
+            className={`flex-1 py-5 text-sm font-bold transition relative hover:bg-[#111] ${
+              activeTab === "drafts"
+                ? "text-white"
+                : "text-gray-500"
+            }`}
+          >
+            Drafts
+
+            {activeTab ===
+              "drafts" && (
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-[#c30F45] rounded-full" />
+            )}
+          </button>
+
+          <button
+            onClick={() =>
               setActiveTab("followers")
             }
             className={`flex-1 py-5 text-sm font-bold transition relative hover:bg-[#111] ${
@@ -416,9 +434,9 @@ const Profile = () => {
             Loading...
           </div>
         ) : activeTab === "stories" ? (
-          stories.length > 0 ? (
+          stories.filter(s => s.isDraft !== true).length > 0 ? (
             <div className="space-y-4 mt-6">
-              {stories.map((story) => (
+              {stories.filter(s => s.isDraft !== true).map((story) => (
                 <StoryCard
                   key={story.id}
                   story={story}
@@ -441,6 +459,34 @@ const Profile = () => {
               <p className="text-gray-500">
                 Start publishing your
                 first story.
+              </p>
+            </div>
+          )
+        ) : activeTab === "drafts" ? (
+          stories.filter(s => s.isDraft === true).length > 0 ? (
+            <div className="space-y-4 mt-6">
+              {stories.filter(s => s.isDraft === true).map((story) => (
+                <StoryCard
+                  key={story.id}
+                  story={story}
+                  onBookmark={
+                    toggleBookmark
+                  }
+                  isBookmarked={bookmarkIds.has(
+                    story.id
+                  )}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-24">
+
+              <h3 className="text-2xl font-bold mb-3">
+                No drafts yet
+              </h3>
+
+              <p className="text-gray-500">
+                Start composing your drafts in the upload section.
               </p>
             </div>
           )

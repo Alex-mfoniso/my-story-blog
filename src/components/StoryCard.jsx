@@ -8,7 +8,11 @@ const StoryCard = ({ story, onBookmark, isBookmarked }) => {
   const handleCardClick = (e) => {
     // Prevent navigation if clicking on a button or link
     if (e.target.closest("button") || e.target.closest("a")) return;
-    navigate(`/story/${story.id}`);
+    if (story.isDraft) {
+      navigate(`/edit/${story.id}`);
+    } else {
+      navigate(`/story/${story.id}`);
+    }
   };
 
   return (
@@ -44,8 +48,13 @@ const StoryCard = ({ story, onBookmark, isBookmarked }) => {
           </span>
         </div>
 
-        <h3 className="text-base font-bold text-white mb-1 leading-tight">
+        <h3 className="text-base font-bold text-white mb-1 leading-tight flex items-center gap-2">
           {story.title}
+          {story.isDraft && (
+            <span className="text-[10px] bg-red-600/20 text-[#c30F45] border border-[#c30F45]/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+              Draft
+            </span>
+          )}
         </h3>
 
         <div 
@@ -66,39 +75,41 @@ const StoryCard = ({ story, onBookmark, isBookmarked }) => {
         )}
 
         {/* Action Icons */}
-        <div className="flex items-center justify-between text-gray-500 max-w-md">
-          <div className="flex items-center gap-1 group">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-blue-500/10 group-hover:text-blue-500 transition">
-              <span>💬</span>
+        {!story.isDraft && (
+          <div className="flex items-center justify-between text-gray-500 max-w-md">
+            <div className="flex items-center gap-1 group">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-blue-500/10 group-hover:text-blue-500 transition">
+                <span>💬</span>
+              </div>
+              <span className="text-xs group-hover:text-blue-500">{story.commentCount || 0}</span>
             </div>
-            <span className="text-xs group-hover:text-blue-500">{story.commentCount || 0}</span>
-          </div>
 
-          <div className="flex items-center gap-1 group">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-pink-500/10 group-hover:text-pink-500 transition">
-              <span>❤️</span>
+            <div className="flex items-center gap-1 group">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-pink-500/10 group-hover:text-pink-500 transition">
+                <span>❤️</span>
+              </div>
+              <span className="text-xs group-hover:text-pink-500">{story.likeCount || story.likes || 0}</span>
             </div>
-            <span className="text-xs group-hover:text-pink-500">{story.likeCount || story.likes || 0}</span>
-          </div>
 
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onBookmark(story.id);
-            }}
-            className="group"
-          >
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-[#c30F45]/10 group-hover:text-[#c30F45] transition ${isBookmarked ? "text-[#c30F45]" : ""}`}>
-              <span>{isBookmarked ? "🔖" : "📑"}</span>
-            </div>
-          </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onBookmark(story.id);
+              }}
+              className="group"
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-[#c30F45]/10 group-hover:text-[#c30F45] transition ${isBookmarked ? "text-[#c30F45]" : ""}`}>
+                <span>{isBookmarked ? "🔖" : "📑"}</span>
+              </div>
+            </button>
 
-          <div className="flex items-center gap-1 group">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-green-500/10 group-hover:text-green-500 transition">
-              <span>📤</span>
+            <div className="flex items-center gap-1 group">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-green-500/10 group-hover:text-green-500 transition">
+                <span>📤</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </article>
   );

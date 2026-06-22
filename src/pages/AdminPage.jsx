@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   collection,
-  getDocs,
   doc,
   updateDoc,
   deleteDoc,
@@ -17,7 +15,6 @@ import {
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   PieChart,
@@ -28,6 +25,7 @@ import { toast, ToastContainer } from "react-toastify";
 
 const ADMIN_UID = "jUVRPKVD9VWGk0guVbDT68FTgxj1";
 const COLORS = ["#c30F45", "#1d9bf0", "#10b981", "#f59e0b", "#8b5cf6"];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 const AdminPage = () => {
   const { user } = useAuth();
@@ -35,8 +33,17 @@ const AdminPage = () => {
   const [users, setUsers] = useState([]);
   const [stories, setStories] = useState([]);
   const [activeTab, setActiveTab] = useState("stats");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [recipientMode, setRecipientMode] = useState("all");
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const isAdmin = useMemo(() => user?.uid === ADMIN_UID, [user]);
+  const selectableUsers = useMemo(
+    () => users.filter((u) => u.email && !u.isDisabled),
+    [users],
+  );
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -61,6 +68,12 @@ const AdminPage = () => {
       unsubStories();
     };
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (recipientMode === "all") {
+      setSelectedUserIds([]);
+    }
+  }, [recipientMode]);
 
   const toggleUserStatus = async (userId, isDisabled) => {
     try {
@@ -88,6 +101,75 @@ const AdminPage = () => {
     } catch (err) {
       console.error("Delete error:", err);
       toast.error("Failed to delete user");
+    }
+  };
+
+  const toggleRecipient = (userId) => {
+    setSelectedUserIds((current) =>
+      current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId],
+    );
+  };
+
+  const selectAllRecipients = () => {
+    setSelectedUserIds(selectableUsers.map((u) => u.id));
+  };
+
+  const clearRecipients = () => {
+    setSelectedUserIds([]);
+  };
+
+  const sendEmail = async (event) => {
+    event.preventDefault();
+
+    if (!emailSubject.trim() || !emailMessage.trim()) {
+      toast.error("Subject and message are required.");
+      return;
+    }
+
+    if (recipientMode === "selected" && selectedUserIds.length === 0) {
+      toast.error("Pick at least one recipient.");
+      return;
+    }
+
+    if (!user?.getIdToken) {
+      toast.error("You need to sign in again.");
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch(`${API_BASE_URL}/api/send-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          target: recipientMode,
+          recipientIds: selectedUserIds,
+          subject: emailSubject,
+          message: emailMessage,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to send email.");
+      }
+
+      toast.success(`Email sent to ${data.sentCount} recipient(s).`);
+      setEmailSubject("");
+      setEmailMessage("");
+      setRecipientMode("all");
+      setSelectedUserIds([]);
+    } catch (err) {
+      console.error("Email send error:", err);
+      toast.error(err.message || "Failed to send email.");
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -143,6 +225,15 @@ const AdminPage = () => {
           >
             Users
             {activeTab === "users" && (
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-[#c30F45] rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("email")}
+            className={`flex-1 py-4 text-sm font-bold transition hover:bg-[#181818] relative ${activeTab === "email" ? "text-white" : "text-gray-500"}`}
+          >
+            Email
+            {activeTab === "email" && (
               <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-1 bg-[#c30F45] rounded-full" />
             )}
           </button>
@@ -217,6 +308,119 @@ const AdminPage = () => {
                   />
                 </PieChart>
               </ResponsiveContainer>
+            </div>
+          </div>
+        ) : activeTab === "email" ? (
+          <div className="space-y-6">
+            <div className="bg-[#16181c] p-4 rounded-2xl border border-[#2f3336]">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="font-bold text-white">Send Email</h3>
+                  <p className="text-xs text-gray-500">
+                    Broadcast to all active users or choose specific recipients.
+                  </p>
+                </div>
+                <div className="text-right text-xs text-gray-500">
+                  <p>{selectableUsers.length} active recipients available</p>
+                  <p>{selectedUserIds.length} selected</p>
+                </div>
+              </div>
+
+              <form className="space-y-4" onSubmit={sendEmail}>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="space-y-2">
+                    <span className="text-xs font-bold text-gray-400 uppercase">
+                      Subject
+                    </span>
+                    <input
+                      type="text"
+                      value={emailSubject}
+                      onChange={(e) => setEmailSubject(e.target.value)}
+                      className="w-full rounded-xl bg-black border border-[#2f3336] px-4 py-3 text-white outline-none focus:border-[#c30F45]"
+                      placeholder="A note from Alex Stories"
+                    />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-xs font-bold text-gray-400 uppercase">
+                      Recipients
+                    </span>
+                    <select
+                      value={recipientMode}
+                      onChange={(e) => setRecipientMode(e.target.value)}
+                      className="w-full rounded-xl bg-black border border-[#2f3336] px-4 py-3 text-white outline-none focus:border-[#c30F45]"
+                    >
+                      <option value="all">All active users</option>
+                      <option value="selected">Selected users</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label className="space-y-2 block">
+                  <span className="text-xs font-bold text-gray-400 uppercase">
+                    Message
+                  </span>
+                  <textarea
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    rows={8}
+                    className="w-full rounded-xl bg-black border border-[#2f3336] px-4 py-3 text-white outline-none focus:border-[#c30F45] resize-y"
+                    placeholder="Write the email body here..."
+                  />
+                </label>
+
+                {recipientMode === "selected" && (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={selectAllRecipients}
+                        className="px-4 py-2 rounded-full text-xs font-bold border border-[#2f3336] text-white hover:bg-[#c30F45]/10"
+                      >
+                        Select all
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearRecipients}
+                        className="px-4 py-2 rounded-full text-xs font-bold border border-[#2f3336] text-white hover:bg-[#181818]"
+                      >
+                        Clear
+                      </button>
+                    </div>
+
+                    <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+                      {selectableUsers.map((recipient) => (
+                        <label
+                          key={recipient.id}
+                          className="flex items-center gap-3 p-3 rounded-xl border border-[#2f3336] bg-black/60 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedUserIds.includes(recipient.id)}
+                            onChange={() => toggleRecipient(recipient.id)}
+                            className="h-4 w-4 accent-[#c30F45]"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-white truncate">
+                              {recipient.displayName || "Unnamed user"}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {recipient.email}
+                            </p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={sendingEmail}
+                  className="w-full rounded-xl bg-[#c30F45] py-3 font-bold text-white disabled:opacity-60"
+                >
+                  {sendingEmail ? "Sending..." : "Send email"}
+                </button>
+              </form>
             </div>
           </div>
         ) : (
