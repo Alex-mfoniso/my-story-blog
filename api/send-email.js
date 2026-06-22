@@ -16,9 +16,31 @@ function getAdminApp() {
     return getApps()[0];
   }
 
-  const projectId = process.env.FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  let projectId = process.env.FIREBASE_PROJECT_ID;
+  if (projectId) {
+    projectId = projectId.trim();
+    if (projectId.startsWith('"') && projectId.endsWith('"')) projectId = projectId.slice(1, -1);
+    if (projectId.startsWith("'") && projectId.endsWith("'")) projectId = projectId.slice(1, -1);
+  }
+
+  let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  if (clientEmail) {
+    clientEmail = clientEmail.trim();
+    if (clientEmail.startsWith('"') && clientEmail.endsWith('"')) clientEmail = clientEmail.slice(1, -1);
+    if (clientEmail.startsWith("'") && clientEmail.endsWith("'")) clientEmail = clientEmail.slice(1, -1);
+  }
+
+  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  if (privateKey) {
+    privateKey = privateKey.trim();
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1);
+    }
+    if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
+      privateKey = privateKey.slice(1, -1);
+    }
+    privateKey = privateKey.replace(/\\n/g, "\n");
+  }
 
   if (!projectId || !clientEmail || !privateKey) {
     throw createHttpError(
