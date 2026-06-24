@@ -34,7 +34,7 @@ function getAdminApp() {
         credential: cert(serviceAccount),
       });
     } catch (e) {
-      console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64:", e.message);
+      throw createHttpError(`Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64: ${e.message}`, 500);
     }
   }
 
@@ -203,6 +203,9 @@ export default async function handler(req, res) {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
       error: error.message || "Unable to send email.",
+      credentialsSource: process.env.FIREBASE_SERVICE_ACCOUNT_BASE64
+        ? "base64"
+        : (process.env.FIREBASE_PRIVATE_KEY ? "individual_vars" : "none")
     });
   }
 }
