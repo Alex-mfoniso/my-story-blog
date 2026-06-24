@@ -16,35 +16,30 @@ function getAdminApp() {
     return getApps()[0];
   }
 
-  let projectId = process.env.FIREBASE_PROJECT_ID;
-  if (projectId) {
-    projectId = projectId.trim();
-    if (projectId.startsWith('"') && projectId.endsWith('"')) projectId = projectId.slice(1, -1);
-    if (projectId.startsWith("'") && projectId.endsWith("'")) projectId = projectId.slice(1, -1);
+  // Approach 1: Use base64-encoded service account JSON (recommended for Vercel)
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
+    try {
+      const decoded = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64, "base64").toString("utf8");
+      const serviceAccount = JSON.parse(decoded);
+      return initializeApp({
+        credential: cert(serviceAccount),
+      });
+    } catch (e) {
+      console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64:", e.message);
+    }
   }
 
-  let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  if (clientEmail) {
-    clientEmail = clientEmail.trim();
-    if (clientEmail.startsWith('"') && clientEmail.endsWith('"')) clientEmail = clientEmail.slice(1, -1);
-    if (clientEmail.startsWith("'") && clientEmail.endsWith("'")) clientEmail = clientEmail.slice(1, -1);
-  }
-
+  // Approach 2: Use individual env vars as fallback
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   let privateKey = process.env.FIREBASE_PRIVATE_KEY;
   if (privateKey) {
-    privateKey = privateKey.trim();
-    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-      privateKey = privateKey.slice(1, -1);
-    }
-    if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
-      privateKey = privateKey.slice(1, -1);
-    }
     privateKey = privateKey.replace(/\\n/g, "\n");
   }
 
   if (!projectId || !clientEmail || !privateKey) {
     throw createHttpError(
-      "Missing Firebase Admin credentials. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.",
+      "Missing Firebase Admin credentials. Set FIREBASE_SERVICE_ACCOUNT_BASE64 or FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY.",
       500,
     );
   }
