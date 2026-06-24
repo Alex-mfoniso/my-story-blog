@@ -157,7 +157,9 @@ const AdminPage = () => {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data?.error || "Failed to send email.");
+        const errorMsg = data?.error || "Failed to send email.";
+        const sourceInfo = data?.credentialsSource ? ` (Source: ${data.credentialsSource})` : "";
+        throw new Error(`${errorMsg}${sourceInfo}`);
       }
 
       toast.success(`Email sent to ${data.sentCount} recipient(s).`);
