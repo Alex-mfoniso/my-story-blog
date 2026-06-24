@@ -11,6 +11,15 @@ function createHttpError(message, statusCode) {
   return error;
 }
 
+function hasFirebaseAdminCredentials() {
+  return !!(
+    process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 ||
+    (process.env.FIREBASE_PROJECT_ID &&
+      process.env.FIREBASE_CLIENT_EMAIL &&
+      process.env.FIREBASE_PRIVATE_KEY)
+  );
+}
+
 function getAdminApp() {
   if (getApps().length > 0) {
     return getApps()[0];
@@ -70,7 +79,7 @@ async function verifyAdminRequest(req) {
   }
   const idToken = authHeader.slice("Bearer ".length);
   // If Firebase credentials are not set, skip verification
-  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+  if (!hasFirebaseAdminCredentials()) {
     console.warn("Firebase admin credentials missing; skipping token verification.");
     return {};
   }
@@ -86,7 +95,7 @@ async function verifyAdminRequest(req) {
 
 async function getRecipients(target, recipientIds) {
   // Fallback: if Firebase credentials are missing, use admin Gmail as sole recipient
-  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+  if (!hasFirebaseAdminCredentials()) {
     console.warn("Firebase credentials missing; using fallback recipient list.");
     return [process.env.GMAIL_USER];
   }
